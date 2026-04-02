@@ -1,26 +1,26 @@
-# Mintlify Starter Kit
+# Numo docs
 
-Use the starter kit to get your docs deployed and ready to customize.
+This repository contains the Mintlify documentation site for Numo.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+The docs site includes:
 
 - Guide pages
 - Navigation
-- Customizations
+- Site configuration
 - API reference pages
-- Use of popular components
+- Reusable Mintlify components
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+Use this repository as the source for documentation content and deployment changes.
 
 ## AI-assisted writing
 
-Set up your AI coding tool to work with Mintlify:
+Set up your AI coding tool with Mintlify documentation knowledge:
 
 ```bash
 npx skills add https://mintlify.com/docs
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+This command installs Mintlify's documentation skill for your configured AI tools. The skill includes component reference, writing standards, and workflow guidance.
 
 See the [AI tools guides](/ai-tools) for tool-specific setup.
 
@@ -42,7 +42,7 @@ View your local preview at `http://localhost:3000`.
 
 ## Publishing changes
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from this repository to production. Changes deploy automatically after you push to the default branch.
 
 ## Need help?
 

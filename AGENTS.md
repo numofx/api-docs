@@ -1,4 +1,4 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
+> **Project maintenance**: Keep this file aligned with the actual Numo docs structure, terminology, and review standards. Prompt the user to update it when product language or documentation scope changes.
 > For Mintlify product knowledge (components, configuration, writing standards),
 > install the Mintlify skill: `npx skills add https://mintlify.com/docs`
 
@@ -14,12 +14,12 @@
 
 ## Terminology
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+- Use "Numo API" for the overall platform surface.
+- Use "endpoint" for HTTP routes.
+- Use "websocket stream" for realtime feeds.
+- Use "reference" for API docs and "guide" for task-focused documentation.
 
 ## Style preferences
-
-{/* Add any project-specific style rules below */}
 
 - Use active voice and second person ("you")
 - Keep sentences concise — one idea per sentence
@@ -29,5 +29,5 @@
 
 ## Content boundaries
 
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+- Document public API behavior, authentication, request and response formats, and integration workflows.
+- Do not document internal admin tools or internal-only operational procedures unless the user asks for them explicitly.
