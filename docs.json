@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Numo Docs",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#4EA7E5",
+    "light": "#7BC4F2",
+    "dark": "#2F86C9"
   },
   "favicon": "/images/favicon.ico",
   "navigation": {
