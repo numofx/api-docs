@@ -1,94 +1,88 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: "Order lifecycle"
+description: "How an order moves through markets-service, execution-service, execution-contracts, and risk-core"
 ---
 
-<Info>
-  **Prerequisites**:
-  - Node.js version 19 or higher
-  - A docs repository with a `docs.json` file
-</Info>
+## System overview
 
-Follow these steps to install and run Mintlify on your operating system.
+Numo's futures orderbook is split across four layers:
+
+<CardGroup cols={2}>
+  <Card title="markets-service" icon="book-open">
+    Public REST API for market discovery, orderbook reads, trades, order entry, and cancellation.
+  </Card>
+  <Card title="execution-service" icon="bolt">
+    Backend executor that validates crossed-order payloads and submits `verifyAndMatch(...)`.
+  </Card>
+  <Card title="execution-contracts" icon="file-contract">
+    Onchain matching and action-verification contracts used by the trusted backend executor.
+  </Card>
+  <Card title="risk-core" icon="shield-halved">
+    Margin engine, subaccounts, cash asset accounting, manager hooks, settlement, and liquidation.
+  </Card>
+</CardGroup>
+
+## End-to-end flow
 
 <Steps>
-<Step title="Install the Mintlify CLI">
-
-```bash
-npm i -g mint
-```
-</Step>
-
-<Step title="Preview locally">
-
-Navigate to your docs directory where your `docs.json` file is located, and run the following command:
-
-```bash
-mint dev
-```
-
-A local preview of your documentation will be available at `http://localhost:3000`.
-
-</Step>
+  <Step title="1. Market discovery">
+    Clients call `GET /v1/markets` on `markets-service` to discover enabled instruments and retrieve the canonical `asset_address` and `sub_id`.
+  </Step>
+  <Step title="2. Orderbook reads">
+    Clients poll `GET /v1/book` and `GET /v1/trades` on `markets-service` for top-of-book state, recent prints, and 24h stats.
+  </Step>
+  <Step title="3. Signed order submission">
+    Clients submit signed order payloads to `POST /v1/orders`. The service validates that order metadata matches the embedded action payload before persisting the order.
+  </Step>
+  <Step title="4. Matching">
+    The matcher loop in `markets-service` scans for crossed orders, computes fill amounts, and builds an executor payload for the market.
+  </Step>
+  <Step title="5. Onchain execution">
+    `execution-service` validates the payload, ABI-encodes `TradeModule.OrderData`, simulates `Matching.verifyAndMatch(...)`, and broadcasts the transaction through `execution-contracts`.
+  </Step>
+  <Step title="6. Risk and settlement">
+    `risk-core` validates account state through manager and asset hooks, updates margin state, and handles cash settlement, funding, and liquidation behavior.
+  </Step>
 </Steps>
 
-## Custom ports
+## Deliverable cNGN future
 
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. For example, to run Mintlify on port 3333, use this command:
+The physically delivered FX future exposed by the backend is:
 
-```bash
-mint dev --port 3333
-```
+- `market`: `USDCcNGN-APR30-2026`
+- `contract_type`: `deliverable_fx_future`
+- `settlement_type`: `physical_delivery`
+- `display_name`: `USDC/cNGN APR-30-2026 Future`
 
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
+The settlement note in the matcher registry is:
 
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
+> Physically delivered on Base. Long pays cNGN and receives fixed USDC notional; short pays fixed USDC notional and receives cNGN.
 
-## Mintlify versions
+## What each repo is responsible for
 
-Please note that each CLI release is associated with a specific version of Mintlify. If your local preview does not align with the production version, please update the CLI:
+### `markets-service`
 
-```bash
-npm mint update
-```
+- stores active orders and trade fills
+- exposes `GET /v1/markets`, `GET /v1/book`, `GET /v1/trades`
+- accepts `POST /v1/orders` and `POST /v1/orders/cancel`
+- resolves market metadata from exact `(asset_address, sub_id)`
 
-## Validating links
+### `execution-service`
 
-The CLI can assist with validating links in your documentation. To identify any broken links, use the following command:
+- accepts `POST /execute`
+- requires `actions.length === signatures.length`
+- requires `actions[0].subaccount_id === order_data.taker_account`
+- requires every `action.module === module_address`
 
-```bash
-mint broken-links
-```
+### `execution-contracts`
 
-## Deployment
+- verifies signed actions
+- owns the trusted `Matching` execution path
+- executes matched transfers against the core account system
 
-If the deployment is successful, you should see the following:
+### `risk-core`
 
-<Frame>
-  <img src="/images/checks-passed.png" alt="Screenshot of a deployment confirmation message that says All checks have passed." style={{ borderRadius: '0.5rem' }} />
-</Frame>
-
-## Code formatting
-
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
-
-## Troubleshooting
-
-<AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
-
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of the CLI: `npm remove -g mint`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall the CLI: `npm i -g mint`
-  </Accordion>
-
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the `~/.mintlify` folder. Then run `mint dev` again.
-  </Accordion>
-</AccordionGroup>
-
-Curious about what changed in the latest CLI version? Check out the [CLI changelog](https://www.npmjs.com/package/mintlify?activeTab=versions).
+- stores balances in `SubAccounts`
+- lets managers validate final account state
+- lets assets track transfer semantics and settlement inputs
+- provides `CashAsset` and `PerpAsset` primitives used by managers during settlement

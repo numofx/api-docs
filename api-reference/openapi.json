@@ -1,94 +1,44 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Numo API",
-    "description": "Example OpenAPI document for the Numo RPC and websocket documentation site.",
-    "license": {
-      "name": "MIT"
-    },
+    "title": "Numo orderbook API",
+    "description": "REST endpoints exposed by Numo's markets-service and execution-service for physically delivered FX futures.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "https://api.numofx.com"
+      "url": "https://api.numofx.com",
+      "description": "markets-service"
+    },
+    {
+      "url": "https://executor.numofx.com",
+      "description": "execution-service"
     }
   ],
-  "security": [
+  "tags": [
     {
-      "bearerAuth": []
+      "name": "Markets service"
+    },
+    {
+      "name": "Execution service"
     }
   ],
   "paths": {
-    "/plants": {
+    "/v1/markets": {
       "get": {
-        "description": "Returns all plants from the system that the user has access to",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "The maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
+        "tags": ["Markets service"],
+        "summary": "List enabled markets",
+        "operationId": "listMarkets",
         "responses": {
           "200": {
-            "description": "Plant response",
+            "description": "Enabled market metadata",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Plant"
+                    "$ref": "#/components/schemas/MarketPresentation"
                   }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a new plant in the store",
-        "requestBody": {
-          "description": "Plant to add to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "plant response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Plant"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -96,57 +46,212 @@
         }
       }
     },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
+    "/v1/book": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "Get order book",
+        "operationId": "getOrderBook",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "description": "ID of plant to delete",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
+            "name": "symbol",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Canonical market symbol such as USDCcNGN-APR30-2026"
+          },
+          {
+            "name": "asset_address",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sub_id",
+            "in": "query",
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
-          },
-          "400": {
-            "description": "unexpected error",
+          "200": {
+            "description": "Top of book for a market",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/BookResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown market",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/trades": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "Get recent trades",
+        "operationId": "getTrades",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "asset_address",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sub_id",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100 }
+          },
+          {
+            "name": "before_trade_id",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent trades and 24h stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradesResponse"
                 }
               }
             }
           }
         }
       }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
+    },
+    "/v1/orders": {
       "post": {
-        "description": "Information about a new plant added to the store",
+        "tags": ["Markets service"],
+        "summary": "Create order",
+        "operationId": "createOrder",
         "requestBody": {
-          "description": "Plant added to the store",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewPlant"
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Accepted order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate order",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/orders/cancel": {
+      "post": {
+        "tags": ["Markets service"],
+        "summary": "Cancel order by owner and nonce",
+        "operationId": "cancelOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrderRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
+            "description": "Cancelled order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Active order not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/execute": {
+      "post": {
+        "tags": ["Execution service"],
+        "summary": "Execute a matched trade payload",
+        "operationId": "executeMatch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteMatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Match accepted by executor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecuteMatchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid executor payload",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
           }
         }
       }
@@ -154,63 +259,235 @@
   },
   "components": {
     "schemas": {
-      "Plant": {
-        "required": [
-          "name"
-        ],
+      "MarketPresentation": {
         "type": "object",
         "properties": {
-          "name": {
-            "description": "The name of the plant",
-            "type": "string"
+          "market": { "type": "string" },
+          "contract_type": { "type": "string" },
+          "settlement_type": { "type": "string" },
+          "base_asset_symbol": { "type": "string" },
+          "quote_asset_symbol": { "type": "string" },
+          "expiry_timestamp": { "type": "integer" },
+          "display_name": { "type": "string" },
+          "display_label": { "type": "string" },
+          "tick_size": { "type": "string" },
+          "settlement_note": { "type": "string" },
+          "asset_address": { "type": "string" },
+          "sub_id": { "type": "string" },
+          "order_entry_spec": { "type": "string" }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "owner_address": { "type": "string" },
+          "signer_address": { "type": "string" },
+          "subaccount_id": { "type": "string" },
+          "recipient_id": { "type": "string" },
+          "nonce": { "type": "string" },
+          "side": { "type": "string", "enum": ["buy", "sell"] },
+          "asset_address": { "type": "string" },
+          "sub_id": { "type": "string" },
+          "desired_amount": { "type": "string" },
+          "filled_amount": { "type": "string" },
+          "limit_price": { "type": "string" },
+          "worst_fee": { "type": "string" },
+          "expiry": { "type": "integer" },
+          "action_json": {},
+          "signature": { "type": "string" },
+          "status": { "type": "string" },
+          "market": { "type": "string" }
+        }
+      },
+      "OrderResponse": {
+        "type": "object",
+        "properties": {
+          "order": { "$ref": "#/components/schemas/Order" }
+        }
+      },
+      "BookResponse": {
+        "type": "object",
+        "properties": {
+          "market_presentation": { "$ref": "#/components/schemas/MarketPresentation" },
+          "bids": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Order" }
           },
-          "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
+          "asks": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Order" }
           }
         }
       },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
-          },
-          {
-            "required": [
-              "id"
-            ],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
-              }
-            }
-          }
-        ]
-      },
-      "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
+      "Trade": {
         "type": "object",
         "properties": {
-          "error": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          }
+          "trade_id": { "type": "integer" },
+          "asset_address": { "type": "string" },
+          "sub_id": { "type": "string" },
+          "price": { "type": "string" },
+          "size": { "type": "string" },
+          "aggressor_side": { "type": "string" },
+          "taker_order_id": { "type": "string" },
+          "maker_order_id": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "market": { "type": "string" }
         }
-      }
-    },
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
+      },
+      "TradeStats24h": {
+        "type": "object",
+        "properties": {
+          "change": { "type": "string" },
+          "high": { "type": "string" },
+          "last": { "type": "string" },
+          "low": { "type": "string" },
+          "volume": { "type": "string" }
+        }
+      },
+      "TradesResponse": {
+        "type": "object",
+        "properties": {
+          "market_presentation": { "$ref": "#/components/schemas/MarketPresentation" },
+          "stats_24h": { "$ref": "#/components/schemas/TradeStats24h" },
+          "trades": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Trade" }
+          },
+          "next_before_trade_id": { "type": "integer" }
+        }
+      },
+      "SpotUIIntent": {
+        "type": "object",
+        "properties": {
+          "side": { "type": "string", "enum": ["buy", "sell"] },
+          "price": { "type": "string" },
+          "size": { "type": "string" }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": [
+          "order_id",
+          "owner_address",
+          "signer_address",
+          "subaccount_id",
+          "recipient_id",
+          "nonce",
+          "asset_address",
+          "worst_fee",
+          "expiry",
+          "action_json",
+          "signature"
+        ],
+        "properties": {
+          "order_id": { "type": "string" },
+          "owner_address": { "type": "string" },
+          "signer_address": { "type": "string" },
+          "subaccount_id": { "type": "string" },
+          "recipient_id": { "type": "string" },
+          "nonce": { "type": "string" },
+          "side": { "type": "string", "enum": ["buy", "sell"] },
+          "asset_address": { "type": "string" },
+          "sub_id": { "type": "string", "default": "0" },
+          "desired_amount": { "type": "string" },
+          "filled_amount": { "type": "string", "default": "0" },
+          "limit_price": { "type": "string" },
+          "worst_fee": { "type": "string" },
+          "expiry": { "type": "integer" },
+          "order_entry_spec": { "type": "string" },
+          "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
+          "action_json": {},
+          "signature": { "type": "string" }
+        }
+      },
+      "CancelOrderRequest": {
+        "type": "object",
+        "required": ["owner_address", "nonce"],
+        "properties": {
+          "owner_address": { "type": "string" },
+          "nonce": { "type": "string" }
+        }
+      },
+      "Action": {
+        "type": "object",
+        "required": ["subaccount_id", "nonce", "module", "data", "expiry", "owner", "signer"],
+        "properties": {
+          "subaccount_id": { "type": "string" },
+          "nonce": { "type": "string" },
+          "module": { "type": "string" },
+          "data": { "type": "string" },
+          "expiry": { "type": "string" },
+          "owner": { "type": "string" },
+          "signer": { "type": "string" }
+        }
+      },
+      "FillDetail": {
+        "type": "object",
+        "required": ["filled_account", "amount_filled", "price", "fee"],
+        "properties": {
+          "filled_account": { "type": "string" },
+          "amount_filled": { "type": "string" },
+          "price": { "type": "string" },
+          "fee": { "type": "string" }
+        }
+      },
+      "OrderData": {
+        "type": "object",
+        "required": ["taker_account", "taker_fee", "fill_details", "manager_data"],
+        "properties": {
+          "taker_account": { "type": "string" },
+          "taker_fee": { "type": "string" },
+          "fill_details": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FillDetail" }
+          },
+          "manager_data": { "type": "string" }
+        }
+      },
+      "ExecuteMatchRequest": {
+        "type": "object",
+        "required": [
+          "market",
+          "asset_address",
+          "module_address",
+          "maker_order_id",
+          "taker_order_id",
+          "actions",
+          "signatures",
+          "order_data"
+        ],
+        "properties": {
+          "market": { "type": "string" },
+          "asset_address": { "type": "string" },
+          "module_address": { "type": "string" },
+          "maker_order_id": { "type": "string" },
+          "taker_order_id": { "type": "string" },
+          "actions": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Action" }
+          },
+          "signatures": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "order_data": { "$ref": "#/components/schemas/OrderData" }
+        }
+      },
+      "ExecuteMatchResponse": {
+        "type": "object",
+        "properties": {
+          "accepted": { "type": "boolean" },
+          "tx_hash": { "type": "string" },
+          "receipt_status": { "type": "string" },
+          "block_number": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
       }
     }
   }

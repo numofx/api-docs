@@ -1,24 +1,46 @@
 ---
 title: "Numo API"
-description: "A websocket and RPC API for interacting with Numo futures exchange."
+description: "REST endpoints for the Numo futures orderbook and execution stack."
 ---
 
 ## Welcome
 
-This reference is generated from the OpenAPI file in this repository. Use it as the source of truth for endpoint structure, authentication, and request or response shapes.
+Numo's orderbook stack is split across a public orderbook service and a separate match executor.
+
+Use this reference for:
+
+- discovering enabled futures markets
+- reading the current book and recent trades
+- submitting signed orders to the matcher
+- understanding the executor payload that clears matched orders onchain
 
 <Card title="OpenAPI specification" icon="file-code" href="https://github.com/numofx/api-docs/blob/main/api-reference/openapi.json">
   View the `openapi.json` file used to build the API reference.
 </Card>
 
-## Authentication
+## Services covered here
 
-API authentication is defined in the OpenAPI specification and rendered into each endpoint page.
+- `markets-service`
+- `execution-service`
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
-```
+The contracts and risk engine behind those services live in:
+
+- `execution-contracts`
+- `risk-core`
+
+## Orderbook flow
+
+<Steps>
+  <Step title="Discover the market">
+    Read `GET /v1/markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `USDCcNGN-APR30-2026`.
+  </Step>
+  <Step title="Read the book">
+    Poll `GET /v1/book` and `GET /v1/trades` from `markets-service`.
+  </Step>
+  <Step title="Submit signed orders">
+    Post signed order payloads to `POST /v1/orders`.
+  </Step>
+  <Step title="Execute matched trades">
+    Let the matcher send crossed-order payloads to `POST /execute` on `execution-service`.
+  </Step>
+</Steps>

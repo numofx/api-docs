@@ -1,78 +1,109 @@
 ---
 title: "Quickstart"
-description: "Start working with the Numo docs locally"
+description: "Read the futures orderbook and submit your first signed order"
 ---
 
-## Get started in three steps
+Use this sequence to integrate against Numo's orderbook for physically delivered FX futures.
 
-Get the docs running locally and make your first Numo-specific update.
+## 1. Discover supported markets
 
-### Step 1: Set up your local environment
+Query `markets-service` first so you know which instruments are enabled in the matcher.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    Clone the docs repository so you can edit content and preview changes locally.
+```bash
+curl "$MARKETS_SERVICE_URL/v1/markets"
+```
 
-    If you need a refresher on cloning, use the [GitHub guide](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+For the deliverable cNGN future, look for:
 
-### Step 2: Deploy your changes
+- `market = "USDCcNGN-APR30-2026"`
+- `contract_type = "deliverable_fx_future"`
+- `settlement_type = "physical_delivery"`
+- `asset_address` and `sub_id`
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+## 2. Read the book and recent trades
 
-    The app deploys changes from the default branch to the live docs site.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, update the name and colors in `docs.json`.
+Once you have the market symbol or the `(asset_address, sub_id)` pair, fetch the current orderbook and recent prints.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field if needed.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-  </Accordion>
-</AccordionGroup>
+```bash
+curl "$MARKETS_SERVICE_URL/v1/book?symbol=USDCcNGN-APR30-2026"
+curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-APR30-2026&limit=50"
+```
 
-### Step 3: Go live
+`markets-service` is the public read surface for:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+- market metadata
+- top-of-book bids and asks
+- recent trades and 24h stats
+- order submission and cancellation
 
-## Next steps
+## 3. Submit a signed order
 
-Now that the docs are running, explore the main content areas:
+Orders are posted to `markets-service`, but the request must already contain a signed action payload that matches the contracts.
+
+```bash
+curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_id": "future-order-1",
+    "owner_address": "0xOWNER",
+    "signer_address": "0xSIGNER",
+    "subaccount_id": "10",
+    "recipient_id": "10",
+    "nonce": "1",
+    "side": "buy",
+    "asset_address": "0xFUTURE_ASSET",
+    "sub_id": "1777507200",
+    "desired_amount": "100000000000000000",
+    "limit_price": "1605000000000000000000",
+    "worst_fee": "0",
+    "expiry": 1893456000,
+    "action_json": {
+      "subaccount_id": "10",
+      "nonce": "1",
+      "module": "0xTRADE_MODULE",
+      "data": "0x...",
+      "expiry": "1893456000",
+      "owner": "0xOWNER",
+      "signer": "0xSIGNER"
+    },
+    "signature": "0x..."
+  }'
+```
+
+`markets-service` rejects the order unless:
+
+- the instrument is enabled
+- `action_json.subaccount_id` matches `subaccount_id`
+- `action_json.nonce` matches `nonce`
+- `action_json.owner` matches `owner_address`
+- `action_json.signer` matches `signer_address`
+
+## 4. Let the executor clear crossed orders
+
+The matching loop in `markets-service` identifies crossed orders and emits a payload to `execution-service`.
+
+`execution-service` then:
+
+- validates the match payload shape
+- ABI-encodes `TradeModule.OrderData`
+- simulates `Matching.verifyAndMatch(...)`
+- submits the transaction to the onchain matching contracts
+
+## 5. Understand where risk and settlement live
+
+`execution-contracts` owns the trusted backend execution path. `risk-core` owns the margin system, subaccounts, cash settlement, and liquidation rules.
+
+For the `USDCcNGN-APR30-2026` future:
+
+- settlement type is physical delivery
+- longs pay cNGN and receive fixed USDC notional at expiry
+- shorts pay fixed USDC notional and receive cNGN
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Order lifecycle" icon="diagram-project" href="/development">
+    Follow the full path across markets-service, execution-service, execution-contracts, and risk-core.
+  </Card>
+  <Card title="Markets service" icon="book" href="/essentials/settings">
+    Review the public orderbook, trades, and order-entry surface.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See the [Mintlify documentation](https://mintlify.com/docs).
-</Note>

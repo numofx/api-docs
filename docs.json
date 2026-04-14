@@ -22,27 +22,10 @@
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core services",
             "pages": [
               "essentials/settings",
               "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
             ]
           }
         ]
@@ -57,11 +40,18 @@
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Markets service",
             "pages": [
               "api-reference/endpoint/get",
+              "api-reference/endpoint/book",
+              "api-reference/endpoint/trades",
               "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
+              "api-reference/endpoint/delete"
+            ]
+          },
+          {
+            "group": "Execution service",
+            "pages": [
               "api-reference/endpoint/webhook"
             ]
           }
