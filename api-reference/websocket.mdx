@@ -1,0 +1,267 @@
+---
+title: "WebSocket streams"
+description: "Real-time book, trades, and order streams from markets-service over a single WebSocket."
+---
+
+## Overview
+
+`markets-service` exposes a realtime feed at `GET /v1/ws`. Connect once and multiplex any
+number of channel subscriptions over the same socket. Every stream starts with a snapshot and
+then delivers incremental updates, so you never poll `GET /v1/book` or `GET /v1/trades` in a
+loop.
+
+- **Endpoint** — `wss://api.numofx.com/v1/ws`
+- **Framing** — JSON text frames
+- **Model** — snapshot, then a strictly increasing stream of deltas you can resume after a
+  reconnect
+
+<Note>
+  Every server frame that belongs to a market carries the `seq` it reflects. The `snapshot`
+  frame is taken at a specific `seq`; each following `update` is the next `seq`. A gap in the
+  `seq` you receive means you missed an event — resume (see [Resume after
+  reconnect](#resume-after-reconnect)).
+</Note>
+
+## Channels
+
+| Channel | Access | Snapshot | Updates |
+| --- | --- | --- | --- |
+| `book` | Public | Top bids and asks (mirrors `GET /v1/book`) | Price-level size changes |
+| `trades` | Public | Recent fills (mirrors `GET /v1/trades`) | One frame per new fill |
+| `orders` | **Private** — requires auth | Your open orders | Status and fill changes for your address |
+
+The `orders` channel is scoped to the authenticated owner address. You must send a valid
+`auth` frame before subscribing to it, and you only ever receive your own order events.
+
+## Client frames
+
+Send these as JSON text frames. The `op` field selects the operation.
+
+### Subscribe
+
+```json
+{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SEP16-2026" }
+```
+
+<ParamField body="op" type="string" required>
+  One of `subscribe`, `unsubscribe`, `auth`, `ping`.
+</ParamField>
+
+<ParamField body="channel" type="string">
+  `book`, `trades`, or `orders`.
+</ParamField>
+
+<ParamField body="market" type="string">
+  Canonical market symbol such as `USDCcNGN-SEP16-2026`, or an `asset_address:sub_id` pair.
+  Required for `book` and `trades`. Optional for `orders`, where it scopes the stream to a
+  single market.
+</ParamField>
+
+<ParamField body="since_seq" type="integer">
+  Optional. The last `seq` you processed. When present, the server replays events after that
+  point instead of sending a fresh snapshot. See [Resume after
+  reconnect](#resume-after-reconnect).
+</ParamField>
+
+Subscriptions are idempotent — subscribing again to the same `(channel, market)` is a no-op.
+
+### Unsubscribe
+
+```json
+{ "op": "unsubscribe", "channel": "book", "market": "USDCcNGN-SEP16-2026" }
+```
+
+The server replies with an `ack` frame.
+
+### Ping
+
+```json
+{ "op": "ping" }
+```
+
+The server replies with `{ "type": "pong" }`. The server also sends protocol-level WebSocket
+pings every 15 seconds and drops the connection on missed pongs, so most clients do not need to
+send `ping` themselves.
+
+### Auth
+
+Required before subscribing to the private `orders` channel. See
+[Authentication](#authentication).
+
+```json
+{
+  "op": "auth",
+  "address": "0xC7bE60b228b997c23094DdfdD71e22E2DE6C9310",
+  "signature": "0x…",
+  "nonce": "b3f1…",
+  "issued_at": 1745000000,
+  "expiry": 1745000300
+}
+```
+
+## Server frames
+
+The `type` field identifies the frame.
+
+| `type` | Meaning |
+| --- | --- |
+| `snapshot` | Full state for a `(channel, market)` at `seq`. Sent first after subscribe. |
+| `update` | One incremental delta. Its `seq` is greater than the snapshot's. |
+| `ack` | Acknowledges `auth` or `unsubscribe`. |
+| `pong` | Reply to a client `ping`. |
+| `error` | A problem with the last frame or the stream. Carries `code` and `message`. |
+
+Frame shape:
+
+```json
+{
+  "type": "update",
+  "channel": "book",
+  "market": "USDCcNGN-SEP16-2026",
+  "seq": 10441,
+  "data": { "…": "…" }
+}
+```
+
+### Update payloads
+
+The `data` on an `update` frame is a compact delta, not the whole book.
+
+<CodeGroup>
+
+```json book
+{
+  "side": "buy",
+  "price_ticks": "1390",
+  "limit_price": "1390",
+  "size_delta": "-0.001",
+  "order_open": "0",
+  "order_id": "…"
+}
+```
+
+```json trades
+{
+  "trade_id": 4821,
+  "price": "1390",
+  "size": "0.001",
+  "aggressor_side": "buy",
+  "taker_order_id": "…",
+  "maker_order_id": "…",
+  "created_at": "2026-04-01T00:00:00Z"
+}
+```
+
+```json orders
+{
+  "order_id": "…",
+  "status": "filled",
+  "side": "sell",
+  "filled_amount": "0.001",
+  "desired_amount": "0.001",
+  "limit_price": "1390",
+  "price_ticks": "1390"
+}
+```
+
+</CodeGroup>
+
+The `snapshot` payload mirrors the matching REST response: `book` snapshots use the same shape
+as `GET /v1/book`, and `trades` snapshots use the trade list from `GET /v1/trades`.
+
+## Subscribe and snapshot consistency
+
+On subscribe, the server:
+
+<Steps>
+  <Step title="Registers your subscription and buffers live deltas">
+    Nothing is dropped between the read and the first frame.
+  </Step>
+  <Step title="Reads the snapshot at a consistent boundary seq">
+    The snapshot data and its `seq` come from a single consistent read.
+  </Step>
+  <Step title="Sends the snapshot, then flushes deltas after the boundary">
+    Buffered deltas with `seq <= boundary` are dropped, so you never double-apply an event
+    already reflected in the snapshot.
+  </Step>
+</Steps>
+
+## Resume after reconnect
+
+Track the highest `seq` you have applied per `(channel, market)`. On reconnect, subscribe with
+`since_seq` set to that value:
+
+```json
+{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SEP16-2026", "since_seq": 10441 }
+```
+
+- If the events after `since_seq` are still retained, the server replays them and goes live —
+  no snapshot, no gap.
+- If `since_seq` is older than the retention horizon, the server sends
+  `error` with code `resume_too_old`, followed by a fresh `snapshot`. Discard your local state
+  and rebuild from the snapshot.
+
+## Authentication
+
+The `orders` channel requires a signed `auth` frame. Authentication uses an EIP-191
+`personal_sign` signature over a canonical message, recovered to your owner address.
+
+Build and sign this exact message (unix seconds, no trailing newline):
+
+```text
+<domain> wants you to authenticate for the Numo markets WebSocket.
+Address: <address>
+Nonce: <nonce>
+Issued At: <issued_at>
+Expiration Time: <expiry>
+```
+
+Then send the fields in an `auth` frame:
+
+<ParamField body="address" type="string" required>
+  Your owner address, `0x` + 40 hex characters. Recovery must match this address.
+</ParamField>
+
+<ParamField body="signature" type="string" required>
+  The `personal_sign` signature over the canonical message.
+</ParamField>
+
+<ParamField body="nonce" type="string" required>
+  A unique value per auth frame.
+</ParamField>
+
+<ParamField body="issued_at" type="integer" required>
+  Unix seconds when the frame was signed. Rejected if far in the future.
+</ParamField>
+
+<ParamField body="expiry" type="integer" required>
+  Unix seconds when the frame stops being valid. Keep the window short; the server enforces a
+  maximum TTL.
+</ParamField>
+
+On success the server replies `{ "type": "ack", "message": "authenticated" }` and the
+connection is authorized for that address until it closes. On failure it replies with an
+`error` frame, code `auth_failed`.
+
+## Error codes
+
+`error` frames carry a `code` and a human-readable `message`.
+
+| Code | Cause |
+| --- | --- |
+| `bad_json` | Frame was not valid JSON. |
+| `bad_op` | Unknown `op`. |
+| `bad_channel` | Unknown channel. |
+| `unknown_market` | Market symbol or `asset:sub_id` did not resolve. |
+| `auth_required` | Subscribed to `orders` without authenticating first. |
+| `auth_failed` | The `auth` frame failed signature, domain, or expiry checks. |
+| `resume_too_old` | `since_seq` is older than retained history; a fresh snapshot follows. |
+| `stream_reset` | The server dropped the subscription; resubscribe with `since_seq`. |
+| `snapshot_failed` | The snapshot could not be loaded; resubscribe. |
+| `slow_consumer` | Your client fell behind and the connection was closed. Reconnect and resume. |
+
+<Warning>
+  The server enforces backpressure. If your client cannot keep up with the send rate, the
+  connection is closed with `slow_consumer`. Reconnect and resume with `since_seq` rather than
+  holding a slow socket open.
+</Warning>

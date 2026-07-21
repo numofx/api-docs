@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Numo orderbook API",
-    "description": "REST endpoints exposed by Numo's markets-service and execution-service for physically delivered FX futures.",
+    "description": "REST endpoints exposed by Numo's markets-service and execution-service for physically delivered FX futures. Real-time book, trades, and order streams are served over the WebSocket endpoint documented in the WebSocket streams reference.",
     "version": "1.0.0"
   },
   "servers": [
@@ -56,7 +56,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Canonical market symbol such as USDCcNGN-APR30-2026"
+            "description": "Canonical market symbol such as USDCcNGN-SEP16-2026"
           },
           {
             "name": "asset_address",
@@ -173,6 +173,42 @@
           },
           "409": {
             "description": "Duplicate order",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/orders/{order_id}": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "Get order status",
+        "operationId": "getOrderStatus",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "The order_id returned when the order was created"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current status and fill snapshot for the order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -304,6 +340,17 @@
         "type": "object",
         "properties": {
           "order": { "$ref": "#/components/schemas/Order" }
+        }
+      },
+      "OrderStatusResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "status": { "type": "string" },
+          "filled_amount": { "type": "string" },
+          "remaining_amount": { "type": "string" },
+          "cancel_reason": { "type": "string" },
+          "updated_at": { "type": "string", "format": "date-time" }
         }
       },
       "BookResponse": {

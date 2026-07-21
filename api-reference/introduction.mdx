@@ -1,6 +1,6 @@
 ---
 title: "Numo API"
-description: "REST endpoints for the Numo futures orderbook and execution stack."
+description: "REST endpoints and WebSocket streams for the Numo futures orderbook and execution stack."
 ---
 
 ## Welcome
@@ -10,8 +10,10 @@ Numo's orderbook stack is split across a public orderbook service and a separate
 Use this reference for:
 
 - discovering enabled futures markets
-- reading the current book and recent trades
+- reading the current book and recent trades over REST
+- streaming real-time book, trades, and order updates over the [WebSocket](/api-reference/websocket)
 - submitting signed orders to the matcher
+- checking the status of a submitted order
 - understanding the executor payload that clears matched orders onchain
 
 <Card title="OpenAPI specification" icon="file-code" href="https://github.com/numofx/api-docs/blob/main/api-reference/openapi.json">
@@ -32,13 +34,16 @@ The contracts and risk engine behind those services live in:
 
 <Steps>
   <Step title="Discover the market">
-    Read `GET /v1/markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `USDCcNGN-APR30-2026`.
+    Read `GET /v1/markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `USDCcNGN-SEP16-2026`.
   </Step>
   <Step title="Read the book">
-    Poll `GET /v1/book` and `GET /v1/trades` from `markets-service`.
+    Read `GET /v1/book` and `GET /v1/trades` from `markets-service`, or subscribe to the
+    `book` and `trades` [WebSocket](/api-reference/websocket) channels for real-time updates
+    instead of polling.
   </Step>
   <Step title="Submit signed orders">
-    Post signed order payloads to `POST /v1/orders`.
+    Post signed order payloads to `POST /v1/orders`, then track fills with
+    `GET /v1/orders/{order_id}` or the authenticated `orders` WebSocket channel.
   </Step>
   <Step title="Execute matched trades">
     Let the matcher send crossed-order payloads to `POST /execute` on `execution-service`.
