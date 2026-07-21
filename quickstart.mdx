@@ -15,7 +15,7 @@ curl "$MARKETS_SERVICE_URL/v1/markets"
 
 For the deliverable cNGN future, look for:
 
-- `market = "USDCcNGN-APR30-2026"`
+- `market = "USDCcNGN-SEP16-2026"`
 - `contract_type = "deliverable_fx_future"`
 - `settlement_type = "physical_delivery"`
 - `asset_address` and `sub_id`
@@ -25,8 +25,8 @@ For the deliverable cNGN future, look for:
 Once you have the market symbol or the `(asset_address, sub_id)` pair, fetch the current orderbook and recent prints.
 
 ```bash
-curl "$MARKETS_SERVICE_URL/v1/book?symbol=USDCcNGN-APR30-2026"
-curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-APR30-2026&limit=50"
+curl "$MARKETS_SERVICE_URL/v1/book?symbol=USDCcNGN-SEP16-2026"
+curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-SEP16-2026&limit=50"
 ```
 
 `markets-service` is the public read surface for:
@@ -93,7 +93,7 @@ The matching loop in `markets-service` identifies crossed orders and emits a pay
 
 `execution-contracts` owns the trusted backend execution path. `risk-core` owns the margin system, subaccounts, cash settlement, and liquidation rules.
 
-For the `USDCcNGN-APR30-2026` future:
+For the `USDCcNGN-SEP16-2026` future:
 
 - settlement type is physical delivery
 - longs pay cNGN and receive fixed USDC notional at expiry
