@@ -46,7 +46,9 @@
               "api-reference/endpoint/book",
               "api-reference/endpoint/trades",
               "api-reference/endpoint/create",
-              "api-reference/endpoint/delete"
+              "api-reference/endpoint/delete",
+              "api-reference/endpoint/order-status",
+              "api-reference/websocket"
             ]
           },
           {
