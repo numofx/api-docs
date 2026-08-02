@@ -18,6 +18,7 @@
             "pages": [
               "index",
               "quickstart",
+              "signing",
               "development",
               "ai-tools/mcp"
             ]

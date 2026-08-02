@@ -1,0 +1,239 @@
+---
+title: "Authentication and signing"
+description: "Build and sign the EIP-712 action payload that POST /v1/orders requires"
+---
+
+Numo has no API keys. Every order is authenticated by an EIP-712 signature over an `Action`
+struct, verified onchain by the `Matching` contract when the trade settles. `markets-service`
+stores the signature and forwards it — it never signs on your behalf.
+
+An order request therefore carries three related things:
+
+1. **Flat order fields** (`side`, `limit_price`, `desired_amount`, …) that `markets-service` uses to place you on the book
+2. **`action_json`** — the `Action` struct you signed
+3. **`signature`** — your EIP-712 signature over that struct
+
+The service rejects the order if the flat fields and `action_json` disagree, so the two must be
+built from the same values.
+
+## The Action struct
+
+`Action` is defined in `IActionVerifier` and hashed with this type string:
+
+```solidity
+Action(uint256 subaccountId,uint256 nonce,address module,bytes data,uint256 expiry,address owner,address signer)
+```
+
+<ParamField body="subaccountId" type="uint256" required>
+  The subaccount placing the order.
+</ParamField>
+
+<ParamField body="nonce" type="uint256" required>
+  Unique per `(owner, nonce)`. The trade module tracks fills against it, so reusing a nonce
+  reuses its fill state.
+</ParamField>
+
+<ParamField body="module" type="address" required>
+  The trade module address for your network — see [Contract addresses](#contract-addresses).
+</ParamField>
+
+<ParamField body="data" type="bytes" required>
+  ABI-encoded `TradeData`. See [Encoding data](#encoding-data).
+</ParamField>
+
+<ParamField body="expiry" type="uint256" required>
+  Unix seconds after which the action can no longer be matched.
+</ParamField>
+
+<ParamField body="owner" type="address" required>
+  The account that owns the subaccount.
+</ParamField>
+
+<ParamField body="signer" type="address" required>
+  The address whose key produced the signature. Equal to `owner` unless you are using a
+  [session key](#session-keys).
+</ParamField>
+
+## EIP-712 domain
+
+The domain is fixed by the `Matching` contract, which is the verifying contract:
+
+```json
+{
+  "name": "Matching",
+  "version": "1.0",
+  "chainId": 8453,
+  "verifyingContract": "0x9E90A9cD13d859Bd6a08168082FB1F6F7405F191"
+}
+```
+
+Use the `chainId` and `Matching` address for the network you are trading on.
+
+## Encoding data
+
+`Action.data` is the ABI encoding of `TradeData`, defined in `ITradeModule`:
+
+| Field           | Type      | Order field      |
+| --------------- | --------- | ---------------- |
+| `asset`         | `address` | `asset_address`  |
+| `subId`         | `uint256` | `sub_id`         |
+| `limitPrice`    | `int256`  | `limit_price`    |
+| `desiredAmount` | `int256`  | `desired_amount` |
+| `worstFee`      | `uint256` | `worst_fee`      |
+| `recipientId`   | `uint256` | `recipient_id`   |
+| `isBid`         | `bool`    | `side`           |
+
+Every field is static, so the encoding is exactly seven 32-byte words — 448 hex characters
+after the `0x`. `markets-service` rejects any other length with
+`expected encoded TradeData tuple`.
+
+<Note>
+  `limitPrice` and `desiredAmount` are signed `int256`, but both must be **positive**. The
+  service rejects zero or negative values.
+</Note>
+
+## Sign and submit
+
+```ts
+import { encodeAbiParameters, parseAbiParameters } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const MATCHING = '0x9E90A9cD13d859Bd6a08168082FB1F6F7405F191'
+const TRADE_MODULE = '0x44813aD30b2fFC1bB2871Eed9b19F63c8196eD1c'
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
+
+const asset = '0xDd9c2Ddf...A1F9'      // from GET /v1/markets
+const subId = 1789516800n              // from GET /v1/markets
+const limitPrice = 1605000000000000000000n
+const desiredAmount = 100000000000000000n
+const worstFee = 0n
+const recipientId = 10n
+const isBid = true
+
+const data = encodeAbiParameters(
+  parseAbiParameters(
+    'address asset, uint256 subId, int256 limitPrice, int256 desiredAmount, uint256 worstFee, uint256 recipientId, bool isBid'
+  ),
+  [asset, subId, limitPrice, desiredAmount, worstFee, recipientId, isBid]
+)
+
+const action = {
+  subaccountId: 10n,
+  nonce: 1n,
+  module: TRADE_MODULE,
+  data,
+  expiry: 1893456000n,
+  owner: account.address,
+  signer: account.address,
+}
+
+const signature = await account.signTypedData({
+  domain: {
+    name: 'Matching',
+    version: '1.0',
+    chainId: 8453,
+    verifyingContract: MATCHING,
+  },
+  types: {
+    Action: [
+      { name: 'subaccountId', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'module', type: 'address' },
+      { name: 'data', type: 'bytes' },
+      { name: 'expiry', type: 'uint256' },
+      { name: 'owner', type: 'address' },
+      { name: 'signer', type: 'address' },
+    ],
+  },
+  primaryType: 'Action',
+  message: action,
+})
+```
+
+Then post the same values, with `action_json` mirroring the struct you signed:
+
+```ts
+await fetch(`${MARKETS_SERVICE_URL}/v1/orders`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    order_id: 'future-order-1',
+    owner_address: account.address,
+    signer_address: account.address,
+    subaccount_id: '10',
+    recipient_id: '10',
+    nonce: '1',
+    side: 'buy',
+    asset_address: asset,
+    sub_id: '1789516800',
+    desired_amount: desiredAmount.toString(),
+    limit_price: limitPrice.toString(),
+    worst_fee: '0',
+    expiry: 1893456000,
+    action_json: {
+      subaccount_id: '10',
+      nonce: '1',
+      module: TRADE_MODULE,
+      data,
+      expiry: '1893456000',
+      owner: account.address,
+      signer: account.address,
+    },
+    signature,
+  }),
+})
+```
+
+## What the service checks
+
+`markets-service` validates consistency before the order reaches the book. It does **not**
+verify your signature — that happens onchain at match time, so a well-formed order with a bad
+signature is accepted here and fails later.
+
+Metadata must agree with `action_json`:
+
+- `action_json.subaccount_id` matches `subaccount_id`
+- `action_json.nonce` matches `nonce`
+- `action_json.owner` matches `owner_address`
+- `action_json.signer` matches `signer_address`
+
+And the decoded `action_json.data` must agree with the flat fields:
+
+- `data.asset` matches `asset_address`
+- `data.subId` matches `sub_id`
+- `data.isBid` matches `side` — `true` for `buy`, `false` for `sell`
+- `data.limitPrice` is a positive whole multiple of the normalized `limit_price`
+- `data.desiredAmount` is a positive whole multiple of the normalized `desired_amount`
+
+<Warning>
+  The price and amount checks compare the onchain-scale integers in `data` against the
+  normalized values in the flat fields. Build both from the same source numbers rather than
+  rounding them independently, or the divisibility check fails.
+</Warning>
+
+## Session keys
+
+Set `signer` to a different address than `owner` to trade from a hot key without exposing the
+owner key. The session key must be registered onchain first:
+
+```solidity
+registerSessionKey(address toAllow, uint expiry)
+```
+
+`Matching` then accepts that signer for the owner's subaccounts until `expiry`. Deregistering
+is subject to a 10-minute cooldown (`DEREGISTER_KEY_COOLDOWN`).
+
+Contract signers are supported too — if `signer` is a contract, verification falls back to
+ERC-1271.
+
+## Contract addresses
+
+| Network      | Chain ID | `Matching` (verifying contract)              | Trade module                                 |
+| ------------ | -------- | -------------------------------------------- | -------------------------------------------- |
+| Base         | 8453     | `0x9E90A9cD13d859Bd6a08168082FB1F6F7405F191` | `0x44813aD30b2fFC1bB2871Eed9b19F63c8196eD1c` |
+| Base Sepolia | 84532    | `0x1599636347FD5bA1fBE21D58AfE0b8B9cbe283FF` | `0x0AAE65AaA66Fe7f54486cDbD007956d3De611990` |
+
+<Card title="Quickstart" icon="rocket" href="/quickstart">
+  See the signed order in the context of the full integration flow.
+</Card>

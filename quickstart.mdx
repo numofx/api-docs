@@ -38,7 +38,7 @@ curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-SEP16-2026&limit=50"
 
 ## 3. Submit a signed order
 
-Orders are posted to `markets-service`, but the request must already contain a signed action payload that matches the contracts.
+Orders are posted to `markets-service`, but the request must already contain a signed action payload that matches the contracts. See [Authentication and signing](/signing) for how to build `action_json.data` and produce the signature.
 
 ```bash
 curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
