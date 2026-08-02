@@ -1,0 +1,90 @@
+---
+title: "MCP server"
+description: "Connect these docs to Claude Code, Cursor, and other AI tools"
+icon: "plug"
+---
+
+Numo Docs is available as a [Model Context Protocol](https://modelcontextprotocol.io) server. Connect it and your AI assistant can search this site directly instead of guessing at endpoint shapes, market symbols, or signed-payload fields.
+
+The server is read-only and scoped to the published content of this site.
+
+```
+https://docs.numofx.com/mcp
+```
+
+## Connect your client
+
+<Tabs>
+  <Tab title="Claude Code">
+    ```bash
+    claude mcp add --transport http --scope user numo-docs https://docs.numofx.com/mcp
+    ```
+
+    Use `--scope user` to make the server available in every project, or drop the flag to scope it to the current directory. Verify with `claude mcp get numo-docs`.
+  </Tab>
+
+  <Tab title="Cursor">
+    ```bash
+    npx mint-mcp add docs.numofx.com
+    ```
+
+    The installer writes the server into your Cursor MCP config. Restart Cursor afterwards.
+  </Tab>
+
+  <Tab title="Windsurf">
+    ```bash
+    npx mint-mcp add docs.numofx.com
+    ```
+
+    Pick Windsurf when the installer asks which client to configure, then restart it.
+  </Tab>
+
+  <Tab title="Other clients">
+    Any client that speaks streamable HTTP can connect to the endpoint directly:
+
+    ```json
+    {
+      "mcpServers": {
+        "numo-docs": {
+          "type": "http",
+          "url": "https://docs.numofx.com/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## What you get
+
+<CardGroup cols={2}>
+  <Card title="search_numo_docs" icon="magnifying-glass">
+    Search this site for guides, endpoint references, and code examples. Returns ranked excerpts with direct page links.
+  </Card>
+  <Card title="query_docs_filesystem" icon="folder-tree">
+    Read whole pages by path and run exact keyword or regex matches across the docs.
+  </Card>
+  <Card title="submit_feedback" icon="comment">
+    Report a page that is wrong, outdated, or incomplete straight to the docs team.
+  </Card>
+</CardGroup>
+
+## Try it
+
+Once connected, ask your assistant questions it can only answer from these docs:
+
+- "What fields does a signed Numo order payload need, and which ones must match `action_json`?"
+- "Show me the WebSocket subscribe message for the cNGN future book channel."
+- "How do I resume a Numo WebSocket stream after a reconnect without refetching a snapshot?"
+- "What settles to whom at expiry on a physically delivered Numo FX future?"
+
+## Plain text for other tools
+
+Tools that read a flat corpus rather than connecting to a server can use:
+
+- [`/llms.txt`](https://docs.numofx.com/llms.txt) — index of every page
+- [`/llms-full.txt`](https://docs.numofx.com/llms-full.txt) — full site content in one file
+
+<Card title="Quickstart" icon="rocket" href="/quickstart">
+  New to the API? Read the book and submit your first signed order.
+</Card>
