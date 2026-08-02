@@ -73,15 +73,15 @@ Use the `chainId` and `Matching` address for the network you are trading on.
 
 `Action.data` is the ABI encoding of `TradeData`, defined in `ITradeModule`:
 
-| Field           | Type      | Order field      |
-| --------------- | --------- | ---------------- |
-| `asset`         | `address` | `asset_address`  |
-| `subId`         | `uint256` | `sub_id`         |
-| `limitPrice`    | `int256`  | `limit_price`    |
-| `desiredAmount` | `int256`  | `desired_amount` |
-| `worstFee`      | `uint256` | `worst_fee`      |
-| `recipientId`   | `uint256` | `recipient_id`   |
-| `isBid`         | `bool`    | `side`           |
+| Field           | Type      | Order field      | Scale in `data`  |
+| --------------- | --------- | ---------------- | ---------------- |
+| `asset`         | `address` | `asset_address`  | —                |
+| `subId`         | `uint256` | `sub_id`         | —                |
+| `limitPrice`    | `int256`  | `limit_price`    | wei (1e18)       |
+| `desiredAmount` | `int256`  | `desired_amount` | wei (1e18)       |
+| `worstFee`      | `uint256` | `worst_fee`      | raw              |
+| `recipientId`   | `uint256` | `recipient_id`   | —                |
+| `isBid`         | `bool`    | `side`           | —                |
 
 Every field is static, so the encoding is exactly seven 32-byte words — 448 hex characters
 after the `0x`. `markets-service` rejects any other length with
@@ -92,10 +92,30 @@ after the `0x`. `markets-service` rejects any other length with
   service rejects zero or negative values.
 </Note>
 
+### Price and amount use two different scales
+
+This is the easiest thing to get wrong, and a mismatch produces an order that is accepted but
+never matches.
+
+- **`action_json.data`** carries the raw onchain values in **wei** — the numbers the contracts
+  settle on.
+- **The order body** carries **human decimal** values. `markets-service` normalizes them
+  itself: the price is divided by the instrument's tick size, and the amount by its minimum
+  size.
+
+So a 0.1-contract bid at 1605 is `limit_price: "1605"` and `desired_amount: "0.1"` in the
+body, while `data` holds `1605000000000000000000` and `100000000000000000`.
+
+<Warning>
+  Sending wei in the body is the classic failure: it parses fine and the order rests on the
+  book at a tick level nothing else will ever cross. Compute the wei values first, then derive
+  the body values with `formatUnits(value, 18)`.
+</Warning>
+
 ## Sign and submit
 
 ```ts
-import { encodeAbiParameters, parseAbiParameters } from 'viem'
+import { encodeAbiParameters, formatUnits, parseAbiParameters } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 const MATCHING = '0x9E90A9cD13d859Bd6a08168082FB1F6F7405F191'
@@ -103,8 +123,8 @@ const TRADE_MODULE = '0x44813aD30b2fFC1bB2871Eed9b19F63c8196eD1c'
 
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
 
-const asset = '0xDd9c2Ddf...A1F9'      // from GET /v1/markets
-const subId = 1789516800n              // from GET /v1/markets
+const asset = '0xDd9c2Ddf97a2Dc9B9d348DcD0ef776aF5291A1F9'      // from GET /v1/markets
+const subId = 1789567201n              // from GET /v1/markets
 const limitPrice = 1605000000000000000000n
 const desiredAmount = 100000000000000000n
 const worstFee = 0n
@@ -166,9 +186,10 @@ await fetch(`${MARKETS_SERVICE_URL}/v1/orders`, {
     nonce: '1',
     side: 'buy',
     asset_address: asset,
-    sub_id: '1789516800',
-    desired_amount: desiredAmount.toString(),
-    limit_price: limitPrice.toString(),
+    sub_id: '1789567201',
+    // human decimals here — the signed `data` above keeps the wei values
+    desired_amount: formatUnits(desiredAmount, 18),
+    limit_price: formatUnits(limitPrice, 18),
     worst_fee: '0',
     expiry: 1893456000,
     action_json: {
@@ -203,14 +224,11 @@ And the decoded `action_json.data` must agree with the flat fields:
 - `data.asset` matches `asset_address`
 - `data.subId` matches `sub_id`
 - `data.isBid` matches `side` — `true` for `buy`, `false` for `sell`
-- `data.limitPrice` is a positive whole multiple of the normalized `limit_price`
-- `data.desiredAmount` is a positive whole multiple of the normalized `desired_amount`
+- `data.limitPrice` is a positive whole multiple of the tick-normalized `limit_price`
+- `data.desiredAmount` is a positive whole multiple of the size-normalized `desired_amount`
 
-<Warning>
-  The price and amount checks compare the onchain-scale integers in `data` against the
-  normalized values in the flat fields. Build both from the same source numbers rather than
-  rounding them independently, or the divisibility check fails.
-</Warning>
+These last two are what tie the wei values in `data` to the human values in the body. Derive
+one from the other as shown above and they hold automatically.
 
 ## Session keys
 

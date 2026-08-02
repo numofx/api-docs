@@ -51,10 +51,10 @@ curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
     "recipient_id": "10",
     "nonce": "1",
     "side": "buy",
-    "asset_address": "0xFUTURE_ASSET",
-    "sub_id": "1777507200",
-    "desired_amount": "100000000000000000",
-    "limit_price": "1605000000000000000000",
+    "asset_address": "0xDd9c2Ddf97a2Dc9B9d348DcD0ef776aF5291A1F9",
+    "sub_id": "1789567201",
+    "desired_amount": "0.1",
+    "limit_price": "1605",
     "worst_fee": "0",
     "expiry": 1893456000,
     "action_json": {
@@ -77,6 +77,12 @@ curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
 - `action_json.nonce` matches `nonce`
 - `action_json.owner` matches `owner_address`
 - `action_json.signer` matches `signer_address`
+
+<Warning>
+  `desired_amount` and `limit_price` in the body are **human decimals** — `markets-service`
+  normalizes them against the instrument's minimum size and tick size. The wei values go in the
+  signed `action_json.data`. See [Authentication and signing](/signing#price-and-amount-use-two-different-scales).
+</Warning>
 
 ## 4. Let the executor clear crossed orders
 
