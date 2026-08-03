@@ -91,6 +91,79 @@
         }
       }
     },
+    "/v1/candles": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "Get OHLCV candles",
+        "operationId": "getCandles",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Canonical market symbol such as USDCcNGN-SEP16-2026"
+          },
+          {
+            "name": "asset_address",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sub_id",
+            "in": "query",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["1m", "5m", "15m", "1h", "4h", "1d"],
+              "default": "1h"
+            },
+            "description": "Bucket size"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 200 },
+            "description": "Maximum number of buckets to return"
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "RFC3339 lower bound, inclusive"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "RFC3339 upper bound, must be after start"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OHLCV buckets, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandlesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown market or invalid query parameter",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/trades": {
       "get": {
         "tags": ["Markets service"],
@@ -340,6 +413,30 @@
         "type": "object",
         "properties": {
           "order": { "$ref": "#/components/schemas/Order" }
+        }
+      },
+      "Candle": {
+        "type": "object",
+        "properties": {
+          "bucket_start": { "type": "string", "format": "date-time" },
+          "open": { "type": "string" },
+          "high": { "type": "string" },
+          "low": { "type": "string" },
+          "close": { "type": "string" },
+          "volume": { "type": "string" },
+          "quote_volume": { "type": "string" },
+          "trade_count": { "type": "integer" }
+        }
+      },
+      "CandlesResponse": {
+        "type": "object",
+        "properties": {
+          "market_presentation": { "$ref": "#/components/schemas/MarketPresentation" },
+          "interval": { "type": "string" },
+          "candles": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Candle" }
+          }
         }
       },
       "OrderStatusResponse": {

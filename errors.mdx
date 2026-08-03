@@ -155,7 +155,14 @@ accepted, so check its status with `GET /v1/orders/{order_id}` rather than resub
 | -------- | ----- |
 | `GET /v1/trades` | `limit must be between 1 and 100` |
 | `GET /v1/trades` | `before_trade_id must be a positive integer` |
+| `GET /v1/candles` | `interval must be one of 1m, 5m, 15m, 1h, 4h, 1d` |
+| `GET /v1/candles` | `limit must be between 1 and 1000` |
+| `GET /v1/candles` | `start must be an RFC3339 timestamp` |
+| `GET /v1/candles` | `end must be an RFC3339 timestamp` |
+| `GET /v1/candles` | `end must be after start` |
 | `GET /v1/orders/{order_id}` | `order not found` (`404`) |
+
+`unknown market` applies to `GET /v1/book`, `GET /v1/trades`, and `GET /v1/candles` alike.
 
 <Card title="Authentication and signing" icon="key" href="/signing">
   Most rejections trace back to how the action payload was built.
