@@ -1,0 +1,169 @@
+---
+title: "Order errors and validation"
+description: "Every rejection markets-service can return, and what to change to fix it"
+---
+
+Every error response has the same shape:
+
+```json
+{ "error": "action_json.data.isBid must match side" }
+```
+
+| Status | Meaning                                                                 |
+| ------ | ----------------------------------------------------------------------- |
+| `400`  | The request is malformed or internally inconsistent. Fix and resubmit.   |
+| `403`  | The cancel targets an order you do not own, or a protected namespace.    |
+| `404`  | No such order, or the order is no longer active.                         |
+| `409`  | `order_id` has already been used.                                        |
+| `500`  | Server-side failure. Safe to retry.                                      |
+
+Most rejections happen before the order reaches the book, so a `400` means nothing was placed.
+
+<Note>
+  `markets-service` does not verify your signature — see [Authentication and
+  signing](/signing#what-the-service-checks). A bad signature is accepted here and fails later,
+  onchain, so none of the errors below indicate a signature problem.
+</Note>
+
+## Missing fields
+
+Every one of these is required on `POST /v1/orders`.
+
+| Error | Fix |
+| ----- | --- |
+| `order_id is required` | Supply a unique client-side id. |
+| `asset_address is required` | Take it from `GET /v1/markets`. |
+| `nonce is required` | Supply a nonce unique per `(owner, nonce)`. |
+| `limit_price is required` | Supply the price in human decimals. |
+| `desired_amount is required` | Supply the size in human decimals. |
+| `signature is required` | Supply the EIP-712 signature. |
+| `invalid JSON body` | The body did not parse as JSON. |
+| `action_json must be valid JSON` | `action_json` is present but not valid JSON. |
+
+## Action payload shape
+
+These come from decoding `action_json.data`, the ABI-encoded `TradeData` tuple.
+
+<ParamField body="expected encoded TradeData tuple" type="400">
+  `data` is not exactly seven 32-byte words. After the `0x` prefix it must be 448 hex
+  characters. See [Encoding data](/signing#encoding-data).
+</ParamField>
+
+<ParamField body="decode action_json.data: …" type="400">
+  `data` is the right length but not valid hex.
+</ParamField>
+
+<ParamField body="action_json.data invariant check failed: …" type="400">
+  A wrapper around the field-level failures below. The suffix names the specific problem.
+</ParamField>
+
+## Field consistency
+
+The flat order fields and the signed `action_json` describe the same order, so they must agree.
+Rebuild both from one set of values rather than editing one of them.
+
+| Error | Compared against |
+| ----- | ---------------- |
+| `action_json.subaccount_id must match subaccount_id` | body `subaccount_id` |
+| `action_json.nonce must match nonce` | body `nonce` |
+| `action_json.owner must match owner_address` | body `owner_address` |
+| `action_json.signer must match signer_address` | body `signer_address` |
+| `action_json.data.asset must match asset_address` | body `asset_address` |
+| `action_json.data.subId must match sub_id` | body `sub_id` |
+| `action_json.data.isBid must match side` | `true` for `buy`, `false` for `sell` |
+
+## Scaling
+
+These are the most common rejections, and they almost always mean the body was sent in wei.
+
+<ParamField body="action_json.data.limitPrice is not aligned with normalized limit_price" type="400">
+  `data.limitPrice` must be a positive whole multiple of the body's `limit_price` after tick
+  normalization. The body takes **human decimals**; only `data` carries wei.
+</ParamField>
+
+<ParamField body="action_json.data.desiredAmount is not aligned with normalized desired_amount" type="400">
+  Same rule for size, normalized against the instrument's minimum size.
+</ParamField>
+
+<ParamField body="action_json.data.limitPrice must be positive" type="400">
+  `limitPrice` is a signed `int256` but zero and negative values are rejected.
+</ParamField>
+
+<ParamField body="action_json.data.desiredAmount must be positive" type="400">
+  Same for `desiredAmount`.
+</ParamField>
+
+<ParamField body="normalized atomic size is 0" type="400">
+  `desired_amount` is smaller than the instrument's minimum size, so it normalizes to nothing.
+</ParamField>
+
+<ParamField body="invalid amount step …" type="400">
+  `desired_amount` is not a whole multiple of the instrument's minimum size.
+</ParamField>
+
+<Warning>
+  If a price or amount error appears and the numbers look correct, check the scale first. See
+  [Price and amount use two different
+  scales](/signing#price-and-amount-use-two-different-scales).
+</Warning>
+
+## Amounts and expiry
+
+| Error | Cause |
+| ----- | ----- |
+| `desired_amount must be greater than zero` | Non-positive size in the body. |
+| `filled_amount cannot be negative` | Negative `filled_amount`. |
+| `filled_amount cannot exceed desired_amount` | Partial-fill state is inconsistent. |
+| `expiry must be in the future` | `expiry` is at or before now. Use unix seconds. |
+| `invalid integer value …` | An integer field is not parseable. |
+
+## Instrument
+
+<ParamField body="asset_address must match a configured instrument" type="400">
+  The `(asset_address, sub_id)` pair is not an enabled market. Read `GET /v1/markets` — both
+  values must come from the same entry.
+</ParamField>
+
+<ParamField body="unknown market" type="400">
+  The `symbol` or `asset_address` + `sub_id` on a read endpoint did not resolve.
+</ParamField>
+
+<ParamField body="order_entry_spec and ui_intent are only supported for the spot usdc/cngn contract" type="400">
+  These two fields apply to the spot market only. Omit them on futures orders.
+</ParamField>
+
+## Duplicate orders
+
+<ParamField body="duplicate order: …" type="409">
+  `order_id` has already been submitted. Generate a fresh one; do not retry with the same id.
+</ParamField>
+
+Treat `order_id` as an idempotency key you control. A `409` means the first submission was
+accepted, so check its status with `GET /v1/orders/{order_id}` rather than resubmitting.
+
+## Cancelling
+
+| Status | Error | Cause |
+| ------ | ----- | ----- |
+| `404` | `active order not found` | Already filled, already cancelled, or never existed. |
+| `403` | `service-tagged cancels are not allowed for protected namespace …` | The order belongs to a protected `order_id` namespace. |
+| `500` | `failed to resolve cancel target` | Lookup failed server-side. Retry. |
+
+## Read endpoints
+
+| Endpoint | Error |
+| -------- | ----- |
+| `GET /v1/trades` | `limit must be between 1 and 100` |
+| `GET /v1/trades` | `before_trade_id must be a positive integer` |
+| `GET /v1/candles` | `interval must be one of 1m, 5m, 15m, 1h, 4h, 1d` |
+| `GET /v1/candles` | `limit must be between 1 and 1000` |
+| `GET /v1/candles` | `start must be an RFC3339 timestamp` |
+| `GET /v1/candles` | `end must be an RFC3339 timestamp` |
+| `GET /v1/candles` | `end must be after start` |
+| `GET /v1/orders/{order_id}` | `order not found` (`404`) |
+
+`unknown market` applies to `GET /v1/book`, `GET /v1/trades`, and `GET /v1/candles` alike.
+
+<Card title="Authentication and signing" icon="key" href="/signing">
+  Most rejections trace back to how the action payload was built.
+</Card>

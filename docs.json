@@ -19,6 +19,7 @@
               "index",
               "quickstart",
               "signing",
+              "errors",
               "development",
               "ai-tools/mcp"
             ]
@@ -47,6 +48,7 @@
               "api-reference/endpoint/get",
               "api-reference/endpoint/book",
               "api-reference/endpoint/trades",
+              "api-reference/endpoint/candles",
               "api-reference/endpoint/create",
               "api-reference/endpoint/delete",
               "api-reference/endpoint/order-status",
