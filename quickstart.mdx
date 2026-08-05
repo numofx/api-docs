@@ -5,6 +5,23 @@ description: "Read the futures orderbook and submit your first signed order"
 
 Use this sequence to integrate against Numo's orderbook for physically delivered FX futures.
 
+## Base URL
+
+`markets-service` is served from `https://api.numofx.com`. The examples below use
+`$MARKETS_SERVICE_URL`, so export it once:
+
+```bash
+export MARKETS_SERVICE_URL="https://api.numofx.com"
+```
+
+Read endpoints are public — no API key, and no allowlisting for server-side clients.
+
+<Note>
+  Integrating against USDC/cNGN **spot** rather than futures? Its prices are reported in two
+  different units, and the book's `bids` and `asks` are named for the engine rather than the
+  trader. Start with the [Spot market](/spot) guide.
+</Note>
+
 ## 1. Discover supported markets
 
 Query `markets-service` first so you know which instruments are enabled in the matcher.
