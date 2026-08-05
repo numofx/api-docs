@@ -383,7 +383,16 @@
           "settlement_note": { "type": "string" },
           "asset_address": { "type": "string" },
           "sub_id": { "type": "string" },
-          "order_entry_spec": { "type": "string" }
+          "last_trade_timestamp": { "type": "integer", "description": "Unix seconds of the most recent fill." },
+          "order_entry_spec": { "type": "string", "description": "Spot only. Identifies the order translation contract, such as usdc_cngn_spot_v1." },
+          "ui_price_unit": { "type": "string", "description": "Spot only. Unit of ui_intent.price.", "example": "cNGN per USDC" },
+          "ui_size_unit": { "type": "string", "description": "Spot only. Unit of ui_intent.size.", "example": "USDC notional" },
+          "ui_side_meaning": { "type": "string", "description": "Spot only. What each trader-facing side does." },
+          "engine_price_unit": { "type": "string", "description": "Spot only. Unit of the raw price and limit_price fields.", "example": "USDC per cNGN" },
+          "engine_amount_unit": { "type": "string", "description": "Spot only.", "example": "cNGN amount" },
+          "engine_side_policy": { "type": "string", "description": "Spot only. How trader side maps to engine side.", "example": "invert_ui_side" },
+          "ui_price_to_engine": { "type": "string", "description": "Spot only. Price conversion formula.", "example": "engine_price = 1 / ui_price" },
+          "ui_size_to_engine": { "type": "string", "description": "Spot only. Size conversion formula.", "example": "engine_amount = ui_size * ui_price" }
         }
       },
       "Order": {
@@ -406,7 +415,8 @@
           "action_json": {},
           "signature": { "type": "string" },
           "status": { "type": "string" },
-          "market": { "type": "string" }
+          "market": { "type": "string" },
+          "spot_contract": { "$ref": "#/components/schemas/SpotContract" }
         }
       },
       "OrderResponse": {
@@ -476,7 +486,8 @@
           "taker_order_id": { "type": "string" },
           "maker_order_id": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" },
-          "market": { "type": "string" }
+          "market": { "type": "string" },
+          "spot_contract": { "$ref": "#/components/schemas/SpotContract" }
         }
       },
       "TradeStats24h": {
@@ -503,10 +514,36 @@
       },
       "SpotUIIntent": {
         "type": "object",
+        "description": "Trader-facing view of a spot order, in the units a UI displays.",
         "properties": {
-          "side": { "type": "string", "enum": ["buy", "sell"] },
-          "price": { "type": "string" },
-          "size": { "type": "string" }
+          "side": { "type": "string", "enum": ["buy", "sell"], "description": "buy acquires USDC and sells cNGN inventory; sell delivers USDC and buys cNGN inventory." },
+          "price": { "type": "string", "description": "Price in cNGN per USDC. The reciprocal of the engine price.", "example": "1371.977018" },
+          "size": { "type": "string", "description": "Size as a USDC notional.", "example": "1.199729" }
+        }
+      },
+      "SpotContract": {
+        "type": "object",
+        "description": "Present only on spot markets. Restates the raw engine order in trader-facing terms. Read ui_intent.price for a price in cNGN per USDC; the sibling price and limit_price fields are raw engine values in USDC per cNGN.",
+        "properties": {
+          "spec": { "type": "string", "example": "usdc_cngn_spot_v1" },
+          "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
+          "engine_order": {
+            "type": "object",
+            "description": "The order as the matching engine sees it: cNGN traded against internal USDC cash.",
+            "properties": {
+              "side": { "type": "string", "enum": ["buy", "sell"], "description": "Always the inverse of ui_intent.side." },
+              "price": { "type": "string", "description": "Engine price in USDC per cNGN.", "example": "0.000728875182750367" },
+              "amount": { "type": "string", "description": "Engine amount as a whole cNGN quantity.", "example": "1646" }
+            }
+          },
+          "balance_delta": {
+            "type": "object",
+            "description": "Balance change if the order fills completely.",
+            "properties": {
+              "usdc": { "type": "string", "example": "-1.199729" },
+              "cngn": { "type": "string", "example": "+1646" }
+            }
+          }
         }
       },
       "CreateOrderRequest": {

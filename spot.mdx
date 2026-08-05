@@ -1,0 +1,137 @@
+---
+title: "Spot market"
+description: "Read USDC/cNGN spot prices, and translate between trader-facing and engine units"
+---
+
+The USDC/cNGN spot market trades on the same orderbook as the futures instruments, but its prices
+are reported in two different units. Read this before integrating against spot — a price read from
+the wrong field is off by a factor of roughly 1,370.
+
+## Discover the market
+
+```bash
+curl "https://api.numofx.com/v1/markets"
+```
+
+Look for:
+
+- `market = "USDCcNGN-SPOT"`
+- `contract_type = "spot"`
+- `order_entry_spec = "usdc_cngn_spot_v1"`
+
+Prefer the `market` symbol over `asset_address` and `sub_id` when you call the read endpoints. The
+symbol is stable; the address pair can change between deployments.
+
+## Read the current price
+
+```bash
+curl "https://api.numofx.com/v1/book?symbol=USDCcNGN-SPOT"
+```
+
+Every order in the response carries a `spot_contract` object. Read the price from it:
+
+```json
+{
+  "limit_price": "0.000728875182750367",
+  "spot_contract": {
+    "spec": "usdc_cngn_spot_v1",
+    "ui_intent": { "side": "sell", "price": "1371.977018", "size": "1.199729" },
+    "engine_order": { "side": "buy", "price": "0.000728875182750367", "amount": "1646" },
+    "balance_delta": { "usdc": "-1.199729", "cngn": "+1646" }
+  }
+}
+```
+
+<Warning>
+  Read `spot_contract.ui_intent.price`, not the top-level `price` or `limit_price`.
+
+  The engine trades cNGN against internal USDC cash, so its native price is **USDC per cNGN**
+  (`0.000728875…`). `ui_intent.price` is the reciprocal — **cNGN per USDC** (`1371.977018`) — which
+  is the number a person expects to see. Reading the raw field yields a price near zero, which
+  usually looks like a broken response rather than a unit mismatch.
+</Warning>
+
+`GET /v1/markets` publishes the conversion rules inline on the spot entry, so you can assert them
+at runtime rather than hardcoding them:
+
+| Field | Value |
+| --- | --- |
+| `ui_price_unit` | `cNGN per USDC` |
+| `engine_price_unit` | `USDC per cNGN` |
+| `ui_price_to_engine` | `engine_price = 1 / ui_price` |
+| `ui_size_to_engine` | `engine_amount = ui_size * ui_price` |
+| `engine_side_policy` | `invert_ui_side` |
+
+## Book sides are named for the engine
+
+`bids` and `asks` describe the **engine's** view, and the engine side is always the inverse of the
+trader's. In trader terms the arrays read backwards:
+
+| Array | Engine side | What it means for you |
+| --- | --- | --- |
+| `bids` | buy cNGN | the price at which you **buy** USDC |
+| `asks` | sell cNGN | the price at which you **sell** USDC |
+
+Each order also carries `spot_contract.ui_intent.side`, which states the trader-facing direction
+directly. Branch on that rather than on the array name.
+
+A mid price, with the sides read correctly:
+
+```bash
+curl -s "https://api.numofx.com/v1/book?symbol=USDCcNGN-SPOT" | python3 -c '
+import json, sys
+book = json.load(sys.stdin)
+buy  = float(book["bids"][0]["spot_contract"]["ui_intent"]["price"])
+sell = float(book["asks"][0]["spot_contract"]["ui_intent"]["price"])
+print(f"buy USDC  @ {buy:.4f} cNGN")
+print(f"sell USDC @ {sell:.4f} cNGN")
+print(f"mid       {(buy + sell) / 2:.4f} cNGN")'
+```
+
+## Prefer the book over the last trade
+
+`GET /v1/trades` returns the most recent fills, each with its own `spot_contract`. That is the right
+source for a "last traded at" display, and every trade carries `created_at` so you can show its age.
+
+It is the wrong source for a current rate. In a quiet period the last fill can be hours or days old,
+and the endpoint returns it without any staleness signal — a stale price and a fresh one look
+identical. The book quotes continuously, so a mid price stays current even when nothing is trading.
+
+<Note>
+  Check that `bids` and `asks` are both non-empty before computing a mid. If no maker is quoting,
+  the arrays come back empty.
+</Note>
+
+## Candles
+
+```bash
+curl "https://api.numofx.com/v1/candles?symbol=USDCcNGN-SPOT&interval=1h&limit=200"
+```
+
+Candle prices are **raw engine values** with no `spot_contract` wrapper, so invert them yourself:
+`ui_price = 1 / engine_price`. Buckets with no trades are absent rather than zero-filled.
+
+## Polling and streaming
+
+No rate limit is enforced. Polling every one to five seconds is ample for a displayed rate; be
+considerate rather than aggressive.
+
+For anything latency-sensitive, subscribe to the [websocket stream](/api-reference/websocket)
+instead. Use the `book` and `trades` channels with `"market": "USDCcNGN-SPOT"`, seed from the
+`snapshot` frame, and apply `update` deltas. Public channels need no authentication, and
+server-side clients are unaffected by the browser origin allowlist.
+
+## Submitting spot orders
+
+The same translation applies in reverse when you place an order. Send trader-facing values in
+`ui_intent`, and the engine values in the signed `action_json.data`:
+
+```text
+engine_price  = 1 / ui_price
+engine_amount = ui_size * ui_price
+engine_side   = inverse of ui_side
+```
+
+`order_entry_spec` and `ui_intent` are accepted on spot orders only — omit both on futures. See
+[Authentication and signing](/signing) for building the signed payload, and
+[Create order](/api-reference/endpoint/create) for the full request body.
