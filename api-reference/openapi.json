@@ -379,10 +379,16 @@
           "expiry_timestamp": { "type": "integer" },
           "display_name": { "type": "string" },
           "display_label": { "type": "string" },
-          "tick_size": { "type": "string" },
+          "tick_size": { "type": "string", "description": "Smallest price increment. Order prices are normalized against it." },
+          "min_size": { "type": "string", "description": "Smallest tradable size. Order amounts are normalized against it, and an amount below it normalizes to zero and is rejected.", "example": "0.001" },
+          "contract_multiplier": { "type": "string", "description": "Units of the base asset per contract. 10000 for the USDC/cNGN futures; 1 for spot.", "example": "10000" },
           "settlement_note": { "type": "string" },
           "asset_address": { "type": "string" },
           "sub_id": { "type": "string" },
+          "pricing_model": { "type": "string", "enum": ["linear", "variance", "volatility"], "description": "How the instrument's price relates to its underlying. All current markets are linear." },
+          "price_semantics": { "type": "string", "enum": ["linear", "variance", "volatility"], "description": "Interpretation of the raw price fields. Mirrors pricing_model." },
+          "display_price_kind": { "type": "string", "enum": ["direct", "vol_percent"], "description": "How a client should render the price. All current markets are direct." },
+          "display_semantics": { "type": "string", "enum": ["direct", "vol_percent"], "description": "Interpretation of the displayed price. Mirrors display_price_kind." },
           "last_trade_timestamp": { "type": "integer", "description": "Unix seconds of the most recent fill." },
           "order_entry_spec": { "type": "string", "description": "Spot only. Identifies the order translation contract, such as usdc_cngn_spot_v1." },
           "ui_price_unit": { "type": "string", "description": "Spot only. Unit of ui_intent.price.", "example": "cNGN per USDC" },
@@ -415,7 +421,17 @@
           "action_json": {},
           "signature": { "type": "string" },
           "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time", "description": "When the order was accepted onto the book." },
           "market": { "type": "string" },
+          "contract_type": { "type": "string" },
+          "settlement_type": { "type": "string" },
+          "base_asset_symbol": { "type": "string" },
+          "quote_asset_symbol": { "type": "string" },
+          "display_name": { "type": "string" },
+          "display_label": { "type": "string" },
+          "tick_size": { "type": "string" },
+          "price_semantics": { "type": "string" },
+          "display_semantics": { "type": "string" },
           "spot_contract": { "$ref": "#/components/schemas/SpotContract" }
         }
       },
@@ -487,6 +503,8 @@
           "maker_order_id": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" },
           "market": { "type": "string" },
+          "contract_type": { "type": "string" },
+          "settlement_type": { "type": "string" },
           "spot_contract": { "$ref": "#/components/schemas/SpotContract" }
         }
       },
@@ -576,8 +594,11 @@
           "limit_price": { "type": "string" },
           "worst_fee": { "type": "string" },
           "expiry": { "type": "integer" },
-          "order_entry_spec": { "type": "string" },
-          "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
+          "order_entry_spec": { "type": "string", "description": "Spot markets only — sending it on a futures order is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be exactly usdc_cngn_spot_v1 and ui_intent becomes required.", "example": "usdc_cngn_spot_v1" },
+          "ui_intent": {
+            "description": "Spot markets only — sending it on a futures order is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it. If you send those fields as well, each must match the translation exactly or the order is rejected.",
+            "allOf": [{ "$ref": "#/components/schemas/SpotUIIntent" }]
+          },
           "action_json": {},
           "signature": { "type": "string" }
         }

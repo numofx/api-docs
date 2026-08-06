@@ -132,6 +132,36 @@ These are the most common rejections, and they almost always mean the body was s
   These two fields apply to the spot market only. Omit them on futures orders.
 </ParamField>
 
+## Spot order translation
+
+These apply to `USDCcNGN-SPOT` only. Both fields are optional — omit them and your raw engine
+values are used as sent. Send either one and the rules below apply. See the
+[Spot market](/spot) guide for the units involved.
+
+<ParamField body='order_entry_spec must be "usdc_cngn_spot_v1" for spot ui_intent' type="400">
+  You sent `ui_intent`, or an `order_entry_spec` with a different value. The spec string must be
+  exactly `usdc_cngn_spot_v1`.
+</ParamField>
+
+<ParamField body="ui_intent is required when order_entry_spec is provided" type="400">
+  The two fields travel together. Send both, or neither.
+</ParamField>
+
+<ParamField body="side does not match ui_intent translation" type="400">
+  You sent both `side` and `ui_intent`, and they disagree. Engine side is the inverse of
+  `ui_intent.side`. Omit `side` to let the service derive it.
+</ParamField>
+
+<ParamField body="limit_price does not match ui_intent translation" type="400">
+  You sent both `limit_price` and `ui_intent`, and they disagree. The engine price is
+  `1 / ui_intent.price`. Omit `limit_price` to let the service derive it.
+</ParamField>
+
+<ParamField body="desired_amount does not match ui_intent translation" type="400">
+  You sent both `desired_amount` and `ui_intent`, and they disagree. The engine amount is
+  `ui_intent.size * ui_intent.price`. Omit `desired_amount` to let the service derive it.
+</ParamField>
+
 ## Duplicate orders
 
 <ParamField body="duplicate order: …" type="409">
