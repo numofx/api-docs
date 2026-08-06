@@ -576,8 +576,11 @@
           "limit_price": { "type": "string" },
           "worst_fee": { "type": "string" },
           "expiry": { "type": "integer" },
-          "order_entry_spec": { "type": "string" },
-          "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
+          "order_entry_spec": { "type": "string", "description": "Spot markets only — sending it on a futures order is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be exactly usdc_cngn_spot_v1 and ui_intent becomes required.", "example": "usdc_cngn_spot_v1" },
+          "ui_intent": {
+            "description": "Spot markets only — sending it on a futures order is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it. If you send those fields as well, each must match the translation exactly or the order is rejected.",
+            "allOf": [{ "$ref": "#/components/schemas/SpotUIIntent" }]
+          },
           "action_json": {},
           "signature": { "type": "string" }
         }
