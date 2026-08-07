@@ -20,9 +20,28 @@ Every error response has the same shape:
 Most rejections happen before the order reaches the book, so a `400` means nothing was placed.
 
 <Note>
-  `markets-service` does not verify your signature — see [Authentication and
-  signing](/signing#what-the-service-checks). A bad signature is accepted here and fails later,
-  onchain, so none of the errors below indicate a signature problem.
+  `markets-service` verifies your signature at submission — see [Authentication and
+  signing](/signing#what-the-service-checks). An order whose signature does not authorize its
+  action is rejected here rather than failing later onchain.
+</Note>
+
+## Signature
+
+<ParamField body="signature does not authorize this action" type="400">
+  The signature did not recover to `signer_address`, and the signer is not a contract whose
+  `isValidSignature` accepted it.
+
+  The digest is over the `Action` struct exactly as described in
+  [Authentication and signing](/signing) — domain `Matching` version `1.0`, bound to the chain and
+  the Matching contract. A mismatch in any signed field produces a different digest and so a
+  different recovered address. Check that `action_json` is byte-for-byte what you signed, and that
+  `signer_address` is the key that signed it rather than the account that owns it.
+</ParamField>
+
+<Note>
+  A signature that cannot be checked — for example an RPC failure while resolving a contract
+  signer — is not a rejection. The order is accepted and the failure is logged, so a transient
+  outage never blocks a valid order.
 </Note>
 
 ## Missing fields
