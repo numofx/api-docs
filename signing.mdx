@@ -208,9 +208,21 @@ await fetch(`${MARKETS_SERVICE_URL}/v1/orders`, {
 
 ## What the service checks
 
-`markets-service` validates consistency before the order reaches the book. It does **not**
-verify your signature — that happens onchain at match time, so a well-formed order with a bad
-signature is accepted here and fails later.
+`markets-service` verifies your signature and validates consistency before the order reaches the
+book. An order whose signature does not authorize its action is rejected at submission rather
+than resting on the book until it expires.
+
+The service rebuilds the same EIP-712 digest `ActionVerifier` checks onchain and recovers the
+signer, so the signature must be over exactly the `Action` described above — same domain, same
+typehash, same field values. Contract signers are supported: when local recovery does not match,
+the signer is checked for code and `isValidSignature` is called per ERC-1271, mirroring
+`SignatureChecker.isValidSignatureNow` onchain.
+
+<Note>
+  Verification proves the signature authorizes the action. It does not guarantee settlement —
+  margin can still fail, a [session key](#session-keys) can be deregistered between submission and
+  match, and a nonce can collide. Those are still caught onchain.
+</Note>
 
 Metadata must agree with `action_json`:
 
