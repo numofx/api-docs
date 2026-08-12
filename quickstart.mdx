@@ -1,26 +1,19 @@
 ---
 title: "Quickstart"
-description: "Read the futures orderbook and submit your first signed order"
+description: "Read the orderbook and submit your first signed order"
 ---
 
-Use this sequence to integrate against Numo's orderbook for physically delivered FX futures.
+Use this sequence to integrate against Numo's orderbook for stablecoins pegged to fiat currencies.
 
 ## Base URL
 
-`markets-service` is served from `https://api.numofx.com`. The examples below use
-`$MARKETS_SERVICE_URL`, so export it once:
+`markets-service` is served from `https://api.numofx.com`. The examples below use `$MARKETS_SERVICE_URL`, so export it once:
 
 ```bash
 export MARKETS_SERVICE_URL="https://api.numofx.com"
 ```
 
-Read endpoints are public — no API key, and no allowlisting for server-side clients.
-
-<Note>
-  Integrating against USDC/cNGN **spot** rather than futures? Its prices are reported in two
-  different units, and the book's `bids` and `asks` are named for the engine rather than the
-  trader. Start with the [Spot market](/spot) guide.
-</Note>
+Read endpoints are public and require no API key or no allowlisting for server-side clients.
 
 ## 1. Discover supported markets
 
@@ -32,8 +25,8 @@ curl "$MARKETS_SERVICE_URL/v1/markets"
 
 For the deliverable cNGN future, look for:
 
-- `market = "USDCcNGN-SEP16-2026"`
-- `contract_type = "deliverable_fx_future"`
+- `market = "USDCcNGN"`
+- `contract_type = "spot"`
 - `settlement_type = "physical_delivery"`
 - `asset_address` and `sub_id`
 
@@ -42,8 +35,7 @@ For the deliverable cNGN future, look for:
 Once you have the market symbol or the `(asset_address, sub_id)` pair, fetch the current orderbook and recent prints.
 
 ```bash
-curl "$MARKETS_SERVICE_URL/v1/book?symbol=USDCcNGN-SEP16-2026"
-curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-SEP16-2026&limit=50"
+curl "$MARKETS_SERVICE_URL/v1/book?symbol=USDCcNGN-SPOT"
 ```
 
 `markets-service` is the public read surface for:
@@ -96,9 +88,7 @@ curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
 - `action_json.signer` matches `signer_address`
 
 <Warning>
-  `desired_amount` and `limit_price` in the body are **human decimals** — `markets-service`
-  normalizes them against the instrument's minimum size and tick size. The wei values go in the
-  signed `action_json.data`. See [Authentication and signing](/signing#price-and-amount-use-two-different-scales).
+  `desired_amount` and `limit_price` in the body are **human decimals** — `markets-service` normalizes them against the instrument's minimum size and tick size. The wei values go in the signed `action_json.data`. See [Authentication and signing](/signing#price-and-amount-use-two-different-scales).
 </Warning>
 
 ## 4. Let the executor clear crossed orders
@@ -112,20 +102,11 @@ The matching loop in `markets-service` identifies crossed orders and emits a pay
 - simulates `Matching.verifyAndMatch(...)`
 - submits the transaction to the onchain matching contracts
 
-## 5. Understand where risk and settlement live
-
-`execution-contracts` owns the trusted backend execution path. `risk-core` owns the margin system, subaccounts, cash settlement, and liquidation rules.
-
-For the `USDCcNGN-SEP16-2026` future:
-
-- settlement type is physical delivery
-- longs pay cNGN and receive fixed USDC notional at expiry
-- shorts pay fixed USDC notional and receive cNGN
-
 <CardGroup cols={2}>
   <Card title="Order lifecycle" icon="diagram-project" href="/development">
     Follow the full path across markets-service, execution-service, execution-contracts, and risk-core.
   </Card>
+
   <Card title="Markets service" icon="book" href="/essentials/settings">
     Review the public orderbook, trades, and order-entry surface.
   </Card>
