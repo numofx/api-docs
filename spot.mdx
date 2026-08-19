@@ -3,9 +3,9 @@ title: "Spot market"
 description: "Read USDC/cNGN spot prices, and translate between trader-facing and engine units"
 ---
 
-The USDC/cNGN spot market trades on the same orderbook as the futures instruments, but its prices
-are reported in two different units. Read this before integrating against spot — a price read from
-the wrong field is off by a factor of roughly 1,370.
+The USDC/cNGN spot market reports its prices in two different units. Read this before
+integrating against spot — a price read from the wrong field is off by a factor of roughly
+1,370.
 
 ## Discover the market
 
@@ -132,6 +132,6 @@ engine_amount = ui_size * ui_price
 engine_side   = inverse of ui_side
 ```
 
-`order_entry_spec` and `ui_intent` are accepted on spot orders only — omit both on futures. See
-[Authentication and signing](/signing) for building the signed payload, and
+`order_entry_spec` and `ui_intent` are accepted on spot orders only — omit both on every other
+market. See [Authentication and signing](/signing) for building the signed payload, and
 [Create order](/api-reference/endpoint/create) for the full request body.

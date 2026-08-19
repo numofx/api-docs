@@ -5,7 +5,7 @@ description: "How an order moves through markets-service, execution-service, exe
 
 ## System overview
 
-Numo's futures orderbook is split across four layers:
+Numo's orderbook is split across four layers:
 
 <CardGroup cols={2}>
   <Card title="markets-service" icon="book-open">
@@ -45,18 +45,18 @@ Numo's futures orderbook is split across four layers:
   </Step>
 </Steps>
 
-## Deliverable cNGN future
+## USDC/cNGN market
 
-The physically delivered FX future exposed by the backend is:
+The USDC/cNGN market exposed by the backend is:
 
-- `market`: `USDCcNGN-SEP16-2026`
-- `contract_type`: `deliverable_fx_future`
-- `settlement_type`: `physical_delivery`
-- `display_name`: `USDC/cNGN SEP-16-2026 Future`
+- `market`: `USDCcNGN-SPOT`
+- `contract_type`: `spot`
+- `settlement_type`: `spot`
+- `display_name`: `USDC/cNGN Spot`
 
 The settlement note in the matcher registry is:
 
-> Physically delivered on Base. Long pays cNGN and receives fixed USDC notional; short pays fixed USDC notional and receives cNGN.
+> Spot-style orderbook market on Base. Trades exchange WRAPPED_CNGN against internal USDC cash using the existing single quote-asset rail.
 
 ## What each repo is responsible for
 

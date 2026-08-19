@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Numo orderbook API",
-    "description": "REST endpoints exposed by Numo's markets-service and execution-service for physically delivered FX futures. Real-time book, trades, and order streams are served over the WebSocket endpoint documented in the WebSocket streams reference.",
+    "description": "REST endpoints exposed by Numo's markets-service and execution-service for dollar stablecoins. Real-time book, trades, and order streams are served over the WebSocket endpoint documented in the WebSocket streams reference.",
     "version": "1.0.0"
   },
   "servers": [
@@ -56,7 +56,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Canonical market symbol such as USDCcNGN-SEP16-2026"
+            "description": "Canonical market symbol such as USDCcNGN-SPOT"
           },
           {
             "name": "asset_address",
@@ -101,7 +101,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Canonical market symbol such as USDCcNGN-SEP16-2026"
+            "description": "Canonical market symbol such as USDCcNGN-SPOT"
           },
           {
             "name": "asset_address",
@@ -376,12 +376,12 @@
           "settlement_type": { "type": "string" },
           "base_asset_symbol": { "type": "string" },
           "quote_asset_symbol": { "type": "string" },
-          "expiry_timestamp": { "type": "integer" },
+          "expiry_timestamp": { "type": "integer", "description": "Unix seconds at which the market expires. Omitted for markets that do not expire, including USDCcNGN-SPOT." },
           "display_name": { "type": "string" },
           "display_label": { "type": "string" },
           "tick_size": { "type": "string", "description": "Smallest price increment. Order prices are normalized against it." },
           "min_size": { "type": "string", "description": "Smallest tradable size. Order amounts are normalized against it, and an amount below it normalizes to zero and is rejected.", "example": "0.001" },
-          "contract_multiplier": { "type": "string", "description": "Units of the base asset per contract. 10000 for the USDC/cNGN futures; 1 for spot.", "example": "10000" },
+          "contract_multiplier": { "type": "string", "description": "Units of the base asset per contract. 1 for the USDC/cNGN spot market.", "example": "1" },
           "settlement_note": { "type": "string" },
           "asset_address": { "type": "string" },
           "sub_id": { "type": "string" },
@@ -594,9 +594,9 @@
           "limit_price": { "type": "string" },
           "worst_fee": { "type": "string" },
           "expiry": { "type": "integer" },
-          "order_entry_spec": { "type": "string", "description": "Spot markets only — sending it on a futures order is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be exactly usdc_cngn_spot_v1 and ui_intent becomes required.", "example": "usdc_cngn_spot_v1" },
+          "order_entry_spec": { "type": "string", "description": "Spot markets only — sending it on an order for any other market is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be exactly usdc_cngn_spot_v1 and ui_intent becomes required.", "example": "usdc_cngn_spot_v1" },
           "ui_intent": {
-            "description": "Spot markets only — sending it on a futures order is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it. If you send those fields as well, each must match the translation exactly or the order is rejected.",
+            "description": "Spot markets only — sending it on an order for any other market is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it. If you send those fields as well, each must match the translation exactly or the order is rejected.",
             "allOf": [{ "$ref": "#/components/schemas/SpotUIIntent" }]
           },
           "action_json": {},

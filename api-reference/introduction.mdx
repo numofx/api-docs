@@ -1,6 +1,6 @@
 ---
 title: "Numo API"
-description: "REST endpoints and WebSocket streams for the Numo futures orderbook and execution stack."
+description: "REST endpoints and WebSocket streams for the Numo orderbook and execution stack."
 ---
 
 ## Welcome
@@ -9,7 +9,7 @@ Numo's orderbook stack is split across a public orderbook service and a separate
 
 Use this reference for:
 
-- discovering enabled futures markets
+- discovering enabled markets
 - reading the current book and recent trades over REST
 - streaming real-time book, trades, and order updates over the [WebSocket](/api-reference/websocket)
 - submitting signed orders to the matcher
@@ -34,7 +34,7 @@ The contracts and risk engine behind those services live in:
 
 <Steps>
   <Step title="Discover the market">
-    Read `GET /v1/markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `USDCcNGN-SEP16-2026`.
+    Read `GET /v1/markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `USDCcNGN-SPOT`.
   </Step>
   <Step title="Read the book">
     Read `GET /v1/book` and `GET /v1/trades` from `markets-service`, or subscribe to the

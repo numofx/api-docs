@@ -14,12 +14,39 @@ loop.
 - **Framing** — JSON text frames
 - **Model** — snapshot, then a strictly increasing stream of deltas you can resume after a
   reconnect
+- **Delivery** — event-driven push on every state change, with no publish interval (see
+  [Update delivery](#update-delivery))
 
 <Note>
   Every server frame that belongs to a market carries the `seq` it reflects. The `snapshot`
   frame is taken at a specific `seq`; each following `update` is the next `seq`. A gap in the
   `seq` you receive means you missed an event — resume (see [Resume after
   reconnect](#resume-after-reconnect)).
+</Note>
+
+## Update delivery
+
+Updates are event-driven, not interval-based. The server pushes an `update` frame the moment
+the underlying state changes — an order placed, cancelled, expired, or filled. There is no
+publish tick, no fixed cadence, and nothing for you to poll.
+
+That has a few consequences worth designing for:
+
+- **One frame per state change.** Updates are not batched, conflated, or rate-limited. A price
+  level that changes five times produces five `update` frames, each with its own `seq`.
+- **No cadence to rely on.** A quiet market can go minutes without a frame; a single match can
+  deliver a burst of frames in the same millisecond. Drive your UI off arriving frames rather
+  than a timer, and buffer client-side if you need a fixed-cadence render.
+- **Silence is not a stalled connection.** The only periodic traffic the server sends is a
+  WebSocket ping every 15 seconds. If the market is idle, you receive nothing but pings.
+- **Related deltas arrive together.** A fill emits its `trades`, `book`, and `orders` deltas as
+  one contiguous block of `seq` values, so you never see a trade without the matching book and
+  order updates.
+
+<Note>
+  If an internal notification is ever lost, a background reconciliation delivers the affected
+  events within a few seconds, in normal `seq` order. No client action is needed — you see a
+  slightly later frame, never a gap.
 </Note>
 
 ## Channels
@@ -40,7 +67,7 @@ Send these as JSON text frames. The `op` field selects the operation.
 ### Subscribe
 
 ```json
-{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SEP16-2026" }
+{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SPOT" }
 ```
 
 <ParamField body="op" type="string" required>
@@ -52,7 +79,7 @@ Send these as JSON text frames. The `op` field selects the operation.
 </ParamField>
 
 <ParamField body="market" type="string">
-  Canonical market symbol such as `USDCcNGN-SEP16-2026`, or an `asset_address:sub_id` pair.
+  Canonical market symbol such as `USDCcNGN-SPOT`, or an `asset_address:sub_id` pair.
   Required for `book` and `trades`. Optional for `orders`, where it scopes the stream to a
   single market.
 </ParamField>
@@ -68,7 +95,7 @@ Subscriptions are idempotent — subscribing again to the same `(channel, market
 ### Unsubscribe
 
 ```json
-{ "op": "unsubscribe", "channel": "book", "market": "USDCcNGN-SEP16-2026" }
+{ "op": "unsubscribe", "channel": "book", "market": "USDCcNGN-SPOT" }
 ```
 
 The server replies with an `ack` frame.
@@ -117,7 +144,7 @@ Frame shape:
 {
   "type": "update",
   "channel": "book",
-  "market": "USDCcNGN-SEP16-2026",
+  "market": "USDCcNGN-SPOT",
   "seq": 10441,
   "data": { "…": "…" }
 }
@@ -192,7 +219,7 @@ Track the highest `seq` you have applied per `(channel, market)`. On reconnect, 
 `since_seq` set to that value:
 
 ```json
-{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SEP16-2026", "since_seq": 10441 }
+{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SPOT", "since_seq": 10441 }
 ```
 
 - If the events after `since_seq` are still retained, the server replays them and goes live —

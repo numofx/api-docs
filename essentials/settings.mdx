@@ -3,7 +3,7 @@ description: "Public orderbook and order-entry endpoints exposed by markets-serv
 title: "Markets service"
 ---
 
-`markets-service` is the public-facing REST surface for Numo's futures orderbook.
+`markets-service` is the public-facing REST surface for Numo's orderbook.
 
 ## Public endpoints
 
@@ -33,7 +33,7 @@ Use `GET /v1/markets` before you submit anything. The response contains the cano
 
 `GET /v1/book` accepts either:
 
-- `symbol=USDCcNGN-SEP16-2026`, or
+- `symbol=USDCcNGN-SPOT`, or
 - `asset_address=0x...&sub_id=1789567201`
 
 The response returns:

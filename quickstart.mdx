@@ -23,11 +23,11 @@ Query `markets-service` first so you know which instruments are enabled in the m
 curl "$MARKETS_SERVICE_URL/v1/markets"
 ```
 
-For the deliverable cNGN future, look for:
+For the USDC/cNGN market, look for:
 
-- `market = "USDCcNGN"`
+- `market = "USDCcNGN-SPOT"`
 - `contract_type = "spot"`
-- `settlement_type = "physical_delivery"`
+- `settlement_type = "spot"`
 - `asset_address` and `sub_id`
 
 ## 2. Read the book and recent trades
@@ -36,6 +36,7 @@ Once you have the market symbol or the `(asset_address, sub_id)` pair, fetch the
 
 ```bash
 curl "$MARKETS_SERVICE_URL/v1/book?symbol=USDCcNGN-SPOT"
+curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-SPOT&limit=50"
 ```
 
 `markets-service` is the public read surface for:
