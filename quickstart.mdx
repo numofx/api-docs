@@ -50,6 +50,17 @@ curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-SPOT&limit=50"
 
 Orders are posted to `markets-service`, but the request must already contain a signed action payload that matches the contracts. See [Authentication and signing](/signing) for how to build `action_json.data` and produce the signature.
 
+<Warning>
+  `worst_fee` is the most a fill may charge you **per unit filled**, and it must cover the
+  market's `taker_fee_bps` from `GET /v1/markets`. The value below is 30 bps of the example price
+  (`1605 x 0.0030`), scaled to 1e18.
+
+  Do not copy `0` from an older example. The fee is paid by whichever order arrived **later**, so
+  resting on the book does not exempt you — see
+  [Fees follow arrival order](/spot#fees-follow-arrival-order-not-identity). A zero bound against
+  a live taker schedule reverts `TM_FeeTooHigh` on every fill you take.
+</Warning>
+
 ```bash
 curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
   -H "Content-Type: application/json" \
@@ -65,7 +76,7 @@ curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
     "sub_id": "1789567201",
     "desired_amount": "0.1",
     "limit_price": "1605",
-    "worst_fee": "0",
+    "worst_fee": "4815000000000000000",
     "expiry": 1893456000,
     "action_json": {
       "subaccount_id": "10",
