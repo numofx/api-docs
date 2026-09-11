@@ -79,7 +79,7 @@ Use the `chainId` and `Matching` address for the network you are trading on.
 | `subId`         | `uint256` | `sub_id`         | —                |
 | `limitPrice`    | `int256`  | `limit_price`    | wei (1e18)       |
 | `desiredAmount` | `int256`  | `desired_amount` | wei (1e18)       |
-| `worstFee`      | `uint256` | `worst_fee`      | raw              |
+| `worstFee`      | `uint256` | `worst_fee`      | raw, **per unit** |
 | `recipientId`   | `uint256` | `recipient_id`   | —                |
 | `isBid`         | `bool`    | `side`           | —                |
 
@@ -91,6 +91,18 @@ after the `0x`. `markets-service` rejects any other length with
   `limitPrice` and `desiredAmount` are signed `int256`, but both must be **positive**. The
   service rejects zero or negative values.
 </Note>
+
+<Warning>
+  `worstFee` is a bound **per unit filled**, not a total for the order: the contract checks
+  `fee / amountFilled` against it. So it scales with price, and one hardcoded value is right at
+  exactly one price.
+
+  It is also not optional on a market that charges. The fee is paid by whichever order arrived
+  **later**, so resting on the book does not exempt you — see
+  [Fees follow arrival order](/spot#fees-follow-arrival-order-not-identity). A `worstFee` of `0`
+  against a live taker schedule reverts `TM_FeeTooHigh` on every fill you take, quietly, until
+  the order expires.
+</Warning>
 
 ### Price and amount use two different scales
 
@@ -127,7 +139,15 @@ const asset = '0xDd9c2Ddf97a2Dc9B9d348DcD0ef776aF5291A1F9'      // from GET /v1/
 const subId = 1789567201n              // from GET /v1/markets
 const limitPrice = 1605000000000000000000n
 const desiredAmount = 100000000000000000n
-const worstFee = 0n
+// The most this fill may charge you, PER UNIT FILLED -- the contract compares
+// fee / amountFilled against it and reverts TM_FeeTooHigh rather than filling.
+//
+// Derive it from the market's taker_fee_bps (GET /v1/markets) and this order's price, with a
+// little headroom. 0 is correct ONLY on a market that charges nothing: whoever arrives second is
+// the taker, so a zero bound on a fee-charging market reverts every fill you take.
+const takerFeeBps = 25n        // from GET /v1/markets
+const headroomBps = 5n         // so a schedule change does not brick orders already resting
+const worstFee = (limitPrice * (takerFeeBps + headroomBps)) / 10000n
 const recipientId = 10n
 const isBid = true
 
@@ -190,7 +210,7 @@ await fetch(`${MARKETS_SERVICE_URL}/v1/orders`, {
     // human decimals here — the signed `data` above keeps the wei values
     desired_amount: formatUnits(desiredAmount, 18),
     limit_price: formatUnits(limitPrice, 18),
-    worst_fee: '0',
+    worst_fee: worstFee.toString(),
     expiry: 1893456000,
     action_json: {
       subaccount_id: '10',

@@ -135,3 +135,35 @@ engine_side   = inverse of ui_side
 `order_entry_spec` and `ui_intent` are accepted on spot orders only — omit both on every other
 market. See [Authentication and signing](/signing) for building the signed payload, and
 [Create order](/api-reference/endpoint/create) for the full request body.
+
+## Fees follow arrival order, not identity
+
+`GET /v1/markets` reports the schedule for each market as `taker_fee_bps` and `maker_fee_bps`.
+Read it from there — it is the only source, and the matcher charges exactly what it says.
+
+The fee is paid by the **taker**, and taker is decided per fill by which of the two orders was
+created **later**. It is not a property of an account, a strategy, or an order type.
+
+<Warning>
+  Resting a quote does not make you the maker. If your order arrives after the one it matches
+  against, you are the taker on that fill and you pay the taker fee — even if you have been sitting
+  on the book for hours, and even if you think of yourself as a market maker.
+
+  A bot that requotes frequently is the later order most of the time, so it is usually the taker.
+</Warning>
+
+The practical consequence is the bound you sign. `worstFee` caps what a fill may charge you, and
+the contract reverts `TM_FeeTooHigh` rather than filling when the charge exceeds it. Signing `0`
+is safe only while a market charges nothing; on a market with a taker schedule it means every fill
+where you arrive second reverts, silently and repeatedly, until the order expires.
+
+Two details that decide the number:
+
+- **`worstFee` is per unit filled, not a total.** The contract compares `fee / amountFilled`
+  against it, so the correct bound is `feeRate x price`, and it changes with price. A single
+  configured constant is right at exactly one price.
+- **Leave headroom above the published schedule.** Orders already resting were signed under the
+  old number, and they cannot be re-signed atomically with a fee change. Our own clients sign 30
+  bps against a 25 bps schedule for this reason.
+
+See [Authentication and signing](/signing) for how to compute and encode it.
