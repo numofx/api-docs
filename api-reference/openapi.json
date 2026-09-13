@@ -752,7 +752,8 @@
                   "type": "object",
                   "properties": {
                     "cancel_reason": { "type": "string", "description": "Why the order was cancelled; absent otherwise." },
-                    "cancelled_at": { "type": "string", "format": "date-time", "description": "When the order was cancelled; absent otherwise." }
+                    "cancelled_at": { "type": "string", "format": "date-time", "description": "When the order was cancelled; absent otherwise." },
+                    "filled_quote": { "type": "string", "description": "What actually traded, in USDC to 6 decimal places: the sum of fill price x size over the order's fills, taker or maker. Absent when the order has no fills. Prefer it over a size derived from the order's amount, which is valued at the signed limit and overstates a marketable order." }
                   }
                 }
               ]
