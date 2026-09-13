@@ -33,6 +33,13 @@ A frame signed for the WebSocket `orders` channel is not accepted here, and an o
 does not authenticate a WebSocket: the two messages differ, so each recovers a different address
 from the other's signature.
 
+## What traded
+
+Each order that has filled carries `filled_quote`: the USDC that actually changed hands, summed over
+its fills at the prices they executed at. Use it to reconcile balances. Do not derive a size from the
+order's own amount and limit price — a marketable order is signed with slippage room past the touch,
+so that figure overstates what filled. `filled_quote` is absent for an order with no fills.
+
 ## Retention
 
 Filled orders are kept indefinitely. Cancelled and expired orders are kept for 30 days, then pruned.
