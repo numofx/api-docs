@@ -211,6 +211,60 @@
       }
     },
     "/v1/orders": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "List order history",
+        "operationId": "listOrderHistory",
+        "description": "The authenticated owner's orders in every status (active, matching, filled, cancelled, expired), newest first. The owner is taken from the signed X-Numo-Auth frame, never from a parameter. Filled orders are retained indefinitely; cancelled and expired orders for 30 days.",
+        "parameters": [
+          {
+            "name": "X-Numo-Auth",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Base64url-encoded JSON auth frame {address, signature, nonce, issued_at, expiry}, signed with personal_sign over the order-history message. See the endpoint page for the exact message."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "The next_before value from the previous page, to page to older orders."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the owner's orders, newest first",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderHistoryResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid limit or before cursor",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, expired or mismatched auth frame",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": ["Markets service"],
         "summary": "Create order",
@@ -683,6 +737,28 @@
           "tx_hash": { "type": "string" },
           "receipt_status": { "type": "string" },
           "block_number": { "type": "string" }
+        }
+      },
+      "OrderHistoryResponse": {
+        "type": "object",
+        "required": ["orders"],
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                { "$ref": "#/components/schemas/Order" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "cancel_reason": { "type": "string", "description": "Why the order was cancelled; absent otherwise." },
+                    "cancelled_at": { "type": "string", "format": "date-time", "description": "When the order was cancelled; absent otherwise." }
+                  }
+                }
+              ]
+            }
+          },
+          "next_before": { "type": "string", "description": "Pass as before to fetch older orders. Absent on the last page." }
         }
       },
       "ErrorResponse": {
