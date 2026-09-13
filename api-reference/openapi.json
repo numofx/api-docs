@@ -810,6 +810,8 @@
           "created_at": { "type": "string", "format": "date-time" },
           "market": { "type": "string" },
           "display_name": { "type": "string" },
+          "fee": { "type": "string", "description": "What your order paid on the fill, in USDC. 0 for a maker fill; for a taker, the fee charged. Absent when not known." },
+          "tx_hash": { "type": "string", "description": "The Base transaction that settled the fill. Absent for fills recorded before it was stored." },
           "spot_contract": {
             "$ref": "#/components/schemas/SpotContract",
             "description": "The fill in trader terms: ui_intent.size is the USDC that changed hands and balance_delta what the fill moved."
