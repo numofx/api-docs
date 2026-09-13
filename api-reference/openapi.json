@@ -309,6 +309,62 @@
         }
       }
     },
+    "/v1/fills": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "List fills",
+        "operationId": "listFills",
+        "description": "The fills on the authenticated owner's orders, newest first. Takes the same X-Numo-Auth frame as GET /v1/orders; the owner is taken from it, never from a parameter. A trade between two of the owner's orders is listed once per order.",
+        "parameters": [
+          {
+            "name": "X-Numo-Auth",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Base64url-encoded JSON auth frame {address, signature, nonce, issued_at, expiry}, signed with personal_sign over the order-history message. The same frame GET /v1/orders accepts."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "The next_before value from the previous page, to page to older fills."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the owner's fills, newest first",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FillsResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid limit or before cursor",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, malformed, expired or mismatched auth frame",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/orders/{order_id}": {
       "get": {
         "tags": ["Markets service"],
@@ -737,6 +793,35 @@
           "tx_hash": { "type": "string" },
           "receipt_status": { "type": "string" },
           "block_number": { "type": "string" }
+        }
+      },
+      "Fill": {
+        "type": "object",
+        "required": ["trade_id", "order_id", "liquidity", "side", "price", "size", "asset_address", "sub_id", "created_at"],
+        "properties": {
+          "trade_id": { "type": "integer", "description": "The trade this fill belongs to, as on GET /v1/trades." },
+          "order_id": { "type": "string", "description": "Your order that filled." },
+          "liquidity": { "type": "string", "enum": ["taker", "maker"], "description": "taker when your order crossed the book, maker when it rested and was hit." },
+          "side": { "type": "string", "enum": ["buy", "sell"], "description": "Your order's engine side. On the spot market, the inverse of spot_contract.ui_intent.side." },
+          "price": { "type": "string", "description": "Engine price the fill executed at, in USDC per cNGN." },
+          "size": { "type": "string", "description": "Engine size filled, in whole cNGN." },
+          "asset_address": { "type": "string" },
+          "sub_id": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "market": { "type": "string" },
+          "display_name": { "type": "string" },
+          "spot_contract": {
+            "$ref": "#/components/schemas/SpotContract",
+            "description": "The fill in trader terms: ui_intent.size is the USDC that changed hands and balance_delta what the fill moved."
+          }
+        }
+      },
+      "FillsResponse": {
+        "type": "object",
+        "required": ["fills"],
+        "properties": {
+          "fills": { "type": "array", "items": { "$ref": "#/components/schemas/Fill" } },
+          "next_before": { "type": "string", "description": "Pass as before to fetch older fills. Absent on the last page." }
         }
       },
       "OrderHistoryResponse": {

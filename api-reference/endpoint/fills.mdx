@@ -1,0 +1,42 @@
+---
+title: 'List fills'
+openapi: 'GET /v1/fills'
+---
+
+Returns the fills on your orders — every execution, at the price and size it traded — newest first.
+Use it to reconcile balances trade by trade; [order history](/api-reference/endpoint/order-history)
+gives the same activity summed per order.
+
+<Note>
+  Authentication is required, and the owner is taken from the signature, never from a parameter.
+  The public [trades](/api-reference/endpoint/trades) feed lists every execution by order id but not
+  by owner; this endpoint is what ties fills to an address.
+</Note>
+
+## Authentication
+
+Send the same `X-Numo-Auth` frame as [order history](/api-reference/endpoint/order-history), signed
+over the same message. One frame authorizes both endpoints until it expires, so a client that already
+shows order history needs no second signature.
+
+## Reading a fill
+
+- `liquidity` is `taker` when your order crossed the book, `maker` when it rested and was hit.
+- `side`, `price` and `size` are the engine's: your order's engine side, the price in USDC per cNGN,
+  and the size in whole cNGN.
+- On the spot market, `spot_contract.ui_intent` restates the fill in trader terms: `side` (`buy`
+  acquires USDC), `price` in cNGN per USDC, and `size` as the USDC that changed hands.
+- A trade between two of your own orders, on different subaccounts, is listed twice — once for each
+  order — because each moved that account's balances. Both rows share a `trade_id`.
+
+Fees are not included.
+
+## Retention
+
+Fills are kept indefinitely. An order that traded is never pruned, even after it is cancelled or
+expires, so its fills stay listed.
+
+## Paging
+
+Pages hold up to `limit` fills (default 50, maximum 100). When a page is full, the response includes
+`next_before`; pass it back as `before` to fetch older fills. The last page has no `next_before`.
