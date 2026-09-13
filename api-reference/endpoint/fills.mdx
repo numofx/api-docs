@@ -29,7 +29,14 @@ shows order history needs no second signature.
 - A trade between two of your own orders, on different subaccounts, is listed twice — once for each
   order — because each moved that account's balances. Both rows share a `trade_id`.
 
-Fees are not included.
+## Fees
+
+`fee` is what your order paid on the fill, in USDC. Makers are never charged, so a maker fill's `fee`
+is `0`. A taker fill carries the fee the venue charged: recorded when the fill executes, and filled in
+exactly for fills from before fees were recorded. `fee` is absent only when the fee is not known.
+
+`tx_hash` is the Base transaction that settled the fill. It is absent for fills recorded before
+transaction hashes were stored.
 
 ## Retention
 
