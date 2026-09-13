@@ -1,0 +1,43 @@
+---
+title: 'List order history'
+openapi: 'GET /v1/orders'
+---
+
+Returns your orders in every status — `active`, `matching`, `filled`, `cancelled` and `expired` —
+newest first.
+
+<Note>
+  Authentication is required, and the owner is taken from the signature, never from a parameter.
+  Resting orders are public on the book and fills settle on chain, but cancelled and expired orders
+  are not published anywhere else.
+</Note>
+
+## Authentication
+
+Build and sign this exact message with `personal_sign` (unix seconds, no trailing newline). The
+domain is the same one the WebSocket uses.
+
+```text
+<domain> wants you to view your Numo order history.
+Address: <address>
+Nonce: <nonce>
+Issued At: <issued_at>
+Expiration Time: <expiry>
+```
+
+Send the frame — `address`, `signature`, `nonce`, `issued_at`, `expiry` — as JSON, base64url-encoded,
+in the `X-Numo-Auth` header. One frame can be reused across requests until it expires; the service
+accepts a validity window of up to 24 hours.
+
+A frame signed for the WebSocket `orders` channel is not accepted here, and an order-history frame
+does not authenticate a WebSocket: the two messages differ, so each recovers a different address
+from the other's signature.
+
+## Retention
+
+Filled orders are kept indefinitely. Cancelled and expired orders are kept for 30 days, then pruned.
+
+## Paging
+
+Pages hold up to `limit` orders (default 50, maximum 100). When a page is full, the response includes
+`next_before`; pass it back as `before` to fetch older orders. The last page has no `next_before`.

@@ -270,6 +270,9 @@ On success the server replies `{ "type": "ack", "message": "authenticated" }` an
 connection is authorized for that address until it closes. On failure it replies with an
 `error` frame, code `auth_failed`.
 
+The REST [order history](/api-reference/endpoint/order-history) endpoint takes the same frame fields
+but signs a different message, so a frame signed for one is never accepted by the other.
+
 ## Error codes
 
 `error` frames carry a `code` and a human-readable `message`.
