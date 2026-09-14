@@ -60,6 +60,14 @@
             ]
           },
           {
+            "group": "Integrations",
+            "pages": [
+              "api-reference/endpoint/integrations-tickers",
+              "api-reference/endpoint/integrations-orderbook",
+              "api-reference/endpoint/integrations-trades"
+            ]
+          },
+          {
             "group": "Execution service",
             "pages": [
               "api-reference/endpoint/webhook"

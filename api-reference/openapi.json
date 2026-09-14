@@ -91,6 +91,114 @@
         }
       }
     },
+    "/v1/integrations/tickers": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "List tickers for integrators",
+        "description": "One ticker per enabled market, in the pair orientation GET /v1/markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On USDCcNGN-SPOT that is USDC priced in cNGN, the inverse of the engine values GET /v1/book and GET /v1/trades report. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "operationId": "listIntegrationTickers",
+        "responses": {
+          "200": {
+            "description": "Tickers for every enabled market, sorted by ticker_id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/IntegrationTicker" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/orderbook": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "Get orderbook for integrators",
+        "description": "Resting orders aggregated into price levels in the advertised pair orientation. On USDCcNGN-SPOT, bids are orders buying USDC and asks are orders selling it, priced in cNGN per USDC with quantities in USDC. Bid prices round down and ask prices round up to 6 decimal places, and quantities round down, so no level shows a better price or more size than is resting. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "operationId": "getIntegrationOrderbook",
+        "parameters": [
+          {
+            "name": "ticker_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "A ticker_id from GET /v1/integrations/tickers, such as USDCcNGN-SPOT. An unknown value is rejected rather than answered with another market."
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 500, "default": 50 },
+            "description": "Maximum price levels per side."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated levels, best first",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IntegrationOrderbookResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or unknown ticker_id, or depth out of range",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/trades": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "List trades for integrators",
+        "description": "Fills newest first, in the advertised pair orientation. On USDCcNGN-SPOT, price is cNGN per USDC, base_volume is USDC and target_volume is cNGN. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "operationId": "listIntegrationTrades",
+        "parameters": [
+          {
+            "name": "ticker_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "A ticker_id from GET /v1/integrations/tickers, such as USDCcNGN-SPOT."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 500, "default": 100 }
+          },
+          {
+            "name": "before_trade_id",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1 },
+            "description": "The next_before_trade_id from the previous page, to page to older trades."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of trades, newest first",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/IntegrationTradesResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or unknown ticker_id, or an invalid limit or before_trade_id",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/candles": {
       "get": {
         "tags": ["Markets service"],
@@ -942,6 +1050,75 @@
             }
           },
           "next_before": { "type": "string", "description": "Pass as before to fetch older orders. Absent on the last page." }
+        }
+      },
+      "IntegrationTicker": {
+        "type": "object",
+        "description": "A market in its advertised orientation. Price fields are null, never omitted, when there is no value: no fill yet, no resting bid or ask, or nothing traded in the last 24 hours.",
+        "required": ["ticker_id", "base_currency", "target_currency", "last_price", "base_volume", "target_volume", "bid", "ask", "high", "low"],
+        "properties": {
+          "ticker_id": { "type": "string", "description": "Market symbol, such as USDCcNGN-SPOT. Pass it as ticker_id to the orderbook and trades endpoints." },
+          "base_currency": { "type": "string", "description": "The asset priced. USDC on USDCcNGN-SPOT." },
+          "target_currency": { "type": "string", "description": "The asset prices are quoted in. cNGN on USDCcNGN-SPOT." },
+          "last_price": { "type": ["string", "null"], "description": "Price of the most recent fill, at any age, in target_currency per base_currency." },
+          "base_volume": { "type": "string", "description": "Base asset traded over the trailing 24 hours. USDC on USDCcNGN-SPOT. 0 when nothing traded." },
+          "target_volume": { "type": "string", "description": "Target asset traded over the trailing 24 hours. cNGN on USDCcNGN-SPOT. 0 when nothing traded." },
+          "bid": { "type": ["string", "null"], "description": "Best bid. Equals the orderbook's top bid level price." },
+          "ask": { "type": ["string", "null"], "description": "Best ask. Equals the orderbook's top ask level price." },
+          "high": { "type": ["string", "null"], "description": "Highest fill price over the trailing 24 hours." },
+          "low": { "type": ["string", "null"], "description": "Lowest fill price over the trailing 24 hours." }
+        }
+      },
+      "IntegrationOrderbookResponse": {
+        "type": "object",
+        "required": ["ticker_id", "timestamp", "bids", "asks"],
+        "properties": {
+          "ticker_id": { "type": "string" },
+          "timestamp": { "type": "integer", "description": "Unix milliseconds at which the book was read." },
+          "bids": {
+            "type": "array",
+            "description": "Levels buying the base asset, highest price first. Empty array, never null, when there are none.",
+            "items": { "$ref": "#/components/schemas/IntegrationLevel" }
+          },
+          "asks": {
+            "type": "array",
+            "description": "Levels selling the base asset, lowest price first. Empty array, never null, when there are none.",
+            "items": { "$ref": "#/components/schemas/IntegrationLevel" }
+          }
+        }
+      },
+      "IntegrationLevel": {
+        "type": "array",
+        "description": "[price, quantity]: price in target_currency per base_currency, quantity in base_currency, summed over the resting orders at that price.",
+        "prefixItems": [
+          { "type": "string", "description": "Price" },
+          { "type": "string", "description": "Quantity in the base asset" }
+        ],
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "IntegrationTrade": {
+        "type": "object",
+        "required": ["trade_id", "price", "base_volume", "target_volume", "trade_timestamp", "type"],
+        "properties": {
+          "trade_id": { "type": "integer", "description": "The same trade_id GET /v1/trades reports." },
+          "price": { "type": "string", "description": "target_currency per base_currency. cNGN per USDC on USDCcNGN-SPOT." },
+          "base_volume": { "type": "string", "description": "Base asset traded. USDC on USDCcNGN-SPOT." },
+          "target_volume": { "type": "string", "description": "Target asset traded. cNGN on USDCcNGN-SPOT." },
+          "trade_timestamp": { "type": "integer", "description": "Unix milliseconds." },
+          "type": { "type": "string", "enum": ["buy", "sell"], "description": "The taker's side in the base asset: buy means the taker acquired it." }
+        }
+      },
+      "IntegrationTradesResponse": {
+        "type": "object",
+        "required": ["ticker_id", "trades"],
+        "properties": {
+          "ticker_id": { "type": "string" },
+          "trades": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/IntegrationTrade" }
+          },
+          "next_before_trade_id": { "type": "integer", "description": "Pass as before_trade_id to fetch older trades. Absent on the last page." }
         }
       },
       "ErrorResponse": {
