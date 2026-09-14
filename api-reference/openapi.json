@@ -215,7 +215,7 @@
         "tags": ["Markets service"],
         "summary": "List order history",
         "operationId": "listOrderHistory",
-        "description": "The authenticated owner's orders in every status (active, matching, filled, cancelled, expired), newest first. The owner is taken from the signed X-Numo-Auth frame, never from a parameter. Filled orders are retained indefinitely; cancelled and expired orders for 30 days.",
+        "description": "The authenticated owner's orders in every status (active, matching, filled, cancelled, expired), newest first. The owner is taken from the signed X-Numo-Auth frame, never from a parameter. Filled orders, and any cancelled or expired order that traded, are retained indefinitely; cancelled and expired orders with no fills for 30 days.",
         "parameters": [
           {
             "name": "X-Numo-Auth",
@@ -620,12 +620,14 @@
       },
       "TradeStats24h": {
         "type": "object",
+        "description": "Stats over the trailing 24 hours, computed from the market's fills on each request: a rolling window, not the UTC day. Prices are raw engine values (USDC per cNGN on USDCcNGN-SPOT). Every field is omitted when nothing traded in the window.",
         "properties": {
-          "change": { "type": "string" },
-          "high": { "type": "string" },
-          "last": { "type": "string" },
-          "low": { "type": "string" },
-          "volume": { "type": "string" }
+          "change": { "type": "string", "description": "Last price minus the window's first traded price, in engine price units." },
+          "high": { "type": "string", "description": "Highest engine price in the window. On USDCcNGN-SPOT, 1/high is the lowest cNGN-per-USDC price." },
+          "last": { "type": "string", "description": "Most recent engine price in the window." },
+          "low": { "type": "string", "description": "Lowest engine price in the window. On USDCcNGN-SPOT, 1/low is the highest cNGN-per-USDC price." },
+          "volume": { "type": "string", "description": "Summed fill size in the engine's traded unit: whole cNGN on USDCcNGN-SPOT." },
+          "quote_volume": { "type": "string", "description": "Summed fill notional (price x size) in the quote asset: the USDC traded on USDCcNGN-SPOT. Use this, not volume, for a USDC figure." }
         }
       },
       "TradesResponse": {
