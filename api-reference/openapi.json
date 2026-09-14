@@ -365,6 +365,60 @@
         }
       }
     },
+    "/v1/withdrawals": {
+      "post": {
+        "tags": ["Markets service"],
+        "summary": "Create a withdrawal",
+        "operationId": "createWithdrawal",
+        "description": "Withdraws from a subaccount held by Matching with one signed WithdrawalModule action. The venue verifies the signature and that Matching records action.owner as the owner, simulates the withdrawal, and submits it through Matching.verifyAndMatch. Tokens are paid to action.owner. Every check fails closed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/WithdrawalRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted. receipt_status timeout means broadcast but not yet confirmed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WithdrawalReceipt" }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or off-policy request, or the subaccount is not deposited in Matching",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "401": {
+            "description": "The signature does not authorize the action",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "403": {
+            "description": "Matching records another owner for the subaccount",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "422": {
+            "description": "The executor refused it: the simulation reverted, and revert names the revert",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WithdrawalRejection" } } }
+          },
+          "429": {
+            "description": "A withdrawal for this owner is in progress, or more than five were requested in a minute",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "502": {
+            "description": "Outcome unknown: check the balance before signing another withdrawal",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "503": {
+            "description": "Withdrawals are not enabled, or the signature or owner could not be read",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
     "/v1/orders/{order_id}": {
       "get": {
         "tags": ["Markets service"],
@@ -826,6 +880,45 @@
         "properties": {
           "fills": { "type": "array", "items": { "$ref": "#/components/schemas/Fill" } },
           "next_before": { "type": "string", "description": "Pass as before to fetch older fills. Absent on the last page." }
+        }
+      },
+      "WithdrawalRequest": {
+        "type": "object",
+        "required": ["action", "signature"],
+        "properties": {
+          "action": {
+            "type": "object",
+            "description": "A Matching Action for the WithdrawalModule, signed with EIP-712 against the Matching domain.",
+            "required": ["subaccount_id", "nonce", "module", "data", "expiry", "owner", "signer"],
+            "properties": {
+              "subaccount_id": { "type": "string", "description": "Base-10 subaccount id, deposited in Matching." },
+              "nonce": { "type": "string", "description": "Base-10 uint256, unused by this owner in the WithdrawalModule." },
+              "module": { "type": "string", "description": "The WithdrawalModule address." },
+              "data": { "type": "string", "description": "abi.encode(address asset, uint256 amount): the wrapped asset, and the amount in the token's native decimals." },
+              "expiry": { "type": "string", "description": "Unix seconds; in the future and at most one hour ahead." },
+              "owner": { "type": "string", "description": "The subaccount's owner as Matching records it. Tokens are paid here." },
+              "signer": { "type": "string", "description": "Must equal owner." }
+            }
+          },
+          "signature": { "type": "string", "description": "EIP-712 signature by signer: 65 bytes, or longer for an ERC-1271 wallet." }
+        }
+      },
+      "WithdrawalReceipt": {
+        "type": "object",
+        "required": ["accepted", "tx_hash"],
+        "properties": {
+          "accepted": { "type": "boolean", "description": "True once mined successfully." },
+          "tx_hash": { "type": "string" },
+          "receipt_status": { "type": "string", "enum": ["success", "reverted", "timeout"], "description": "timeout: broadcast, not yet confirmed." },
+          "block_number": { "type": "string" }
+        }
+      },
+      "WithdrawalRejection": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" },
+          "revert": { "type": "string", "description": "The revert the simulation hit, e.g. WERC_CannotBeNegative." }
         }
       },
       "OrderHistoryResponse": {
