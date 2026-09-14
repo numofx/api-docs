@@ -42,7 +42,9 @@ so that figure overstates what filled. `filled_quote` is absent for an order wit
 
 ## Retention
 
-Filled orders are kept indefinitely. Cancelled and expired orders are kept for 30 days, then pruned.
+Filled orders are kept indefinitely, and so is any cancelled or expired order that traded before it
+ended, so its fills and `filled_quote` stay reportable. Cancelled and expired orders with no fills are
+kept for 30 days, then pruned.
 
 ## Paging
 

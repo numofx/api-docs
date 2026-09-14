@@ -61,6 +61,13 @@ The response includes:
 - `trades`
 - `next_before_trade_id`
 
+`stats_24h` covers the trailing 24 hours, recomputed from the market's fills on each request. Its
+prices are raw engine values; `volume` is in the traded unit (cNGN) and `quote_volume` in the quote
+asset (USDC). Every field is omitted when nothing traded in the window.
+
+For the fills on your own orders, with the fee paid and the settling transaction, use the signed
+[List fills](/api-reference/endpoint/fills) endpoint.
+
 ## Submitting an order
 
 `POST /v1/orders` persists a signed order after validating the embedded action payload.
