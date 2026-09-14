@@ -55,6 +55,7 @@
               "api-reference/endpoint/order-status",
               "api-reference/endpoint/order-history",
               "api-reference/endpoint/fills",
+              "api-reference/endpoint/withdrawals",
               "api-reference/websocket"
             ]
           },

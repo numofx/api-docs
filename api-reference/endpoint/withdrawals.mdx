@@ -1,0 +1,76 @@
+---
+title: 'Create a withdrawal'
+openapi: 'POST /v1/withdrawals'
+---
+
+Withdraws from a subaccount held by Matching — the kind every account created through the Numo app is. You sign
+one `Action` for the `WithdrawalModule`; the venue verifies it and submits it through `Matching.verifyAndMatch`,
+which lends the account to the module for the call. The module pays the action's `owner`, and the account stays in
+Matching, so trading from it is not interrupted.
+
+<Note>
+  Signing costs no gas: the venue's executor submits the transaction. It is simulated first, so a withdrawal that
+  would revert is refused before anything is sent.
+</Note>
+
+## Signing the action
+
+Sign an [`Action`](/signing) against the same `Matching` domain as an order, with:
+
+| Field | Value |
+| --- | --- |
+| `subaccountId` | the subaccount, deposited in Matching with you as its recorded owner |
+| `nonce` | any unused `uint256`; nonces are per owner and per module, so order nonces never collide with it |
+| `module` | the WithdrawalModule: `0x0a10AE2f5D2482cE1e43bC309D430B8861C2b5aB` on Base |
+| `data` | `abi.encode(address asset, uint256 amount)` |
+| `expiry` | unix seconds, in the future and at most one hour ahead |
+| `owner` | your address; the tokens are sent here |
+| `signer` | the same as `owner` (session keys are not supported yet) |
+
+`asset` is the wrapped asset your balance is held in, not the token it pays out:
+
+| Balance | `asset` | Paid out as |
+| --- | --- | --- |
+| USDC | `0x364058aFF6f36E01505fB2Cc870f8B6BD4835e84` | USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| cNGN | `0x9D806fD040a719D27a8E5E77dc5aE0ED1e089493` | cNGN `0x46C85152bFe9f96829aA94755D9f915F9B10EF5F` |
+
+`amount` is in the token's native decimals — 6 for both, so 1 USDC is `1000000`.
+
+Send the action's seven fields as strings (numbers in base 10, `data` as hex) with the signature:
+
+```json
+{
+  "action": {
+    "subaccount_id": "19",
+    "nonce": "7328734720000000",
+    "module": "0x0a10AE2f5D2482cE1e43bC309D430B8861C2b5aB",
+    "data": "0x000000000000000000000000364058aff6f36e01505fb2cc870f8b6bd4835e8400000000000000000000000000000000000000000000000000000000001e82d7",
+    "expiry": "1789400600",
+    "owner": "0xYourAddress",
+    "signer": "0xYourAddress"
+  },
+  "signature": "0x…"
+}
+```
+
+## What is checked
+
+In order, and every check fails closed — a signature or owner that cannot be read is refused, not waved through:
+
+1. The request: module, subaccount (not 0), signer equals owner, expiry, `data` exactly two words, asset, amount
+   above 0, signature shape. Refused with **400**.
+2. At most one withdrawal in progress per owner, and five a minute. Refused with **429**.
+3. The signature authorizes the action. Refused with **401**.
+4. Matching holds the subaccount (**400**) and records `owner` as its owner (**403**).
+5. The executor's simulation. A withdrawal that would revert is refused with **422**, and `revert` names the
+   revert — for example `WERC_CannotBeNegative` for more than the account holds.
+
+## The outcome
+
+A **200** carries the transaction: `accepted`, `tx_hash`, `receipt_status` and `block_number`.
+`receipt_status: "timeout"` means it was broadcast and had not confirmed when the venue answered — watch the hash
+rather than treating it as failed.
+
+A **502** means the venue could not confirm whether the withdrawal was submitted. Check your balance before signing
+another: a second signed withdrawal is a second withdrawal. Resubmitting the *same* signed request is safe — its
+nonce can only be spent once.
