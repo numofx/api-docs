@@ -19,6 +19,7 @@
               "index",
               "quickstart",
               "spot",
+              "perp",
               "signing",
               "errors",
               "development",
@@ -55,6 +56,7 @@
               "api-reference/endpoint/order-status",
               "api-reference/endpoint/order-history",
               "api-reference/endpoint/fills",
+              "api-reference/endpoint/positions",
               "api-reference/endpoint/withdrawals",
               "api-reference/websocket"
             ]

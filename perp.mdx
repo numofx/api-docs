@@ -1,0 +1,174 @@
+---
+title: "Perpetual market"
+description: "Trade cNGN-PERP, the USDC-settled cNGN perpetual: discovery, order entry, margin, funding and positions"
+---
+
+cNGN-PERP is a USDC-settled perpetual on cNGN. It is quoted exactly like [spot](/spot): every
+price is **USDC per cNGN** (about `0.00073`) and every size is a quantity of **cNGN**. A **long**
+is long cNGN — it gains when cNGN strengthens against the dollar — and is the on-chain long of the
+perp, so a positive position on chain is a long. Read this before integrating against the perp.
+
+## What the market is
+
+The perp runs on its own stack on Base: a CashAsset over real USDC that PnL and funding settle in,
+its own StandardManager (SRM) that holds margin and liquidates, and its own TradeModule that
+orders are signed for. Nothing about it is shared with spot except the matcher and this API, so a
+perp margin account is a separate subaccount from a spot account, opened by the first deposit under
+the perp's SRM.
+
+- `market = "USDCcNGN-PERP"` — the stable identifier you pass as `symbol` and `market`
+- `display_name = "cNGN-PERP"`, `display_label = "USDC per cNGN"`
+- `contract_type = "perpetual"`, `settlement_type = "cash_settled_perpetual"`
+- `base_asset_symbol = "cNGN"`, `quote_asset_symbol = "USDC"`
+- `order_entry_spec = "cngn_usdc_perp_v1"`
+- `ui_size_unit = "cNGN contracts"`, `contract_multiplier = "1"`: one contract is one cNGN
+- `taker_fee_bps = 25`, `maker_fee_bps = 0`, charged in the perp's cash
+
+<Note>
+  The symbol keeps the legacy `USDCcNGN` spelling. Read `base_asset_symbol` and
+  `quote_asset_symbol` for the orientation rather than parsing the symbol.
+</Note>
+
+## Discover the market
+
+```bash
+curl "https://api.numofx.com/v1/markets"
+```
+
+The perp's entry carries everything spot's does — the `ui_*` and `engine_*` contract fields, with
+`engine_side_policy = "same_as_ui"` and the identity formulas — plus three addresses and a `perp`
+object read from chain:
+
+| Field | What it is |
+| --- | --- |
+| `trade_module_address` | The TradeModule a perp order's `action_json.module` must name. A spot module is refused. |
+| `quote_asset_address` | The perp's CashAsset: the USDC escrow you deposit margin into and that PnL settles in. |
+| `margin_manager_address` | The perp's SRM: the manager a perp margin account is created under. |
+
+The `perp` object is cached for 10 seconds, except `paused`, which is re-read on every request:
+
+| Field | Scale | Meaning |
+| --- | --- | --- |
+| `mark_price`, `index_price` | up to 18 decimals | Mark and index in USDC per cNGN, at the engine's scale. |
+| `mark_price_ui`, `index_price_ui` | up to 10 decimals | The same prices at display scale. An empty string when the chain reports no positive price. |
+| `funding_rate_1h` | up to 18 decimals | The hourly funding rate from chain, signed. |
+| `ui_long_funding_rate_1h` | up to 18 decimals | The same number: positive means longs (long cNGN) pay shorts. |
+| `funding_interval_seconds` | integer | `3600`. |
+| `open_interest` | up to 18 decimals | Open interest in cNGN. |
+| `open_interest_usd` | up to 6 decimals | Open interest at the index, in USDC. |
+| `initial_margin_rate`, `maintenance_margin_rate` | up to 18 decimals | The SRM's margin requirements as fractions of notional, for example `0.33333` and `0.2`. |
+| `max_leverage` | up to 2 decimals | `1 / initial_margin_rate`, for example `3`. Empty when the initial rate is zero. |
+| `trading_enabled` | boolean | The chain's answer: the module is allowed on Matching, the position cap is above zero, and the SRM is not paused. Orders are accepted and rest while it is false; the matcher does not cross them. |
+| `paused` | boolean | The SRM guardian's pause. While it holds, every adjustment on perp accounts reverts and new perp orders are refused with `trading_paused`. |
+| `position_cap` | up to 18 decimals | The open-interest cap under the SRM, in cNGN. |
+| `trade_module_address`, `quote_asset_address`, `margin_manager_address` | hex | The same three addresses, repeated. |
+| `collateral_assets` | array | Base assets the SRM credits as margin besides cash. See [cNGN as collateral](#cngn-as-collateral). Empty when margin is cash only. |
+| `index_lag` | object | Present only when the index-lag gate is configured. See [Index lag](#index-lag). |
+| `updated_at` | unix seconds | When the block was read from chain. |
+
+## Place an order
+
+Orders use the same `ui_intent` contract as spot, under the perp's own spec. A long of 137,400 cNGN
+at 0.0007278 USDC per cNGN:
+
+```json
+{
+  "order_entry_spec": "cngn_usdc_perp_v1",
+  "ui_intent": { "side": "buy", "price": "0.0007278", "size": "137400" },
+  "side": "buy",
+  "limit_price": "0.0007278",
+  "desired_amount": "137400"
+}
+```
+
+The engine order is the identity of the intent — `engine_side = ui_side`,
+`engine_price = ui_price`, `engine_amount = ui_size` — so the values you sign into
+`action_json.data` are the same numbers scaled to wei, and `action_json.module` is the perp's
+`trade_module_address`. `buy` opens or extends a long of cNGN; `sell` opens or extends a short.
+
+The order echoes with a `spot_contract` like spot's. For the perp, `balance_delta` is the exposure
+the fill opens — `cngn: "+137400"`, `usdc: "-99.99972"` for the long above — not a token movement:
+nothing is delivered, and the trade leg moves only the difference between the fill and the mark.
+
+Sending the spot spec, or a retired `usdc_cngn_*_v1` spec, on a perp order is rejected with
+`order_entry_spec must be "cngn_usdc_perp_v1" for this market's ui_intent`.
+
+Two perp-only behaviours on `POST /v1/orders`:
+
+- `reduce_only: true` asks the venue to let the order only shrink the account's position. It is
+  refused on spot, and it needs this deployment to read positions from chain.
+- Before resting a perp order the venue runs a margin check on both sides — the initial-margin
+  surplus now, minus the price-versus-mark leg, the taker fee and the initial margin the fill adds.
+  Reducing a position is always allowed. The SRM remains the enforcement on chain.
+
+See [Authentication and signing](/signing) for building the signed payload, and
+[Create order](/api-reference/endpoint/create) for the full request body.
+
+## Margin and liquidation
+
+Margin is held in the perp's CashAsset in USDC. The SRM revalues every position at the **mark** and
+charges margin on that notional:
+
+- **Initial margin** (`initial_margin_rate`) is what a new or larger position must leave in
+  surplus; it caps leverage at `max_leverage`.
+- **Maintenance margin** (`maintenance_margin_rate`) is what an open position must keep. When the
+  account's maintenance surplus falls below zero it is liquidated through the stack's auction.
+
+`GET /v1/positions` reports both surpluses as the SRM computes them, and an estimated
+`liquidation_price_ui`: the price at which the maintenance surplus reaches zero if nothing else
+changes, assuming the account holds only this position. For a single position the surplus is linear
+in price, so the estimate is `mark - surplus / (S - |S| x mm)` with `S` the signed size and `mm`
+the maintenance rate. Two consequences worth knowing:
+
+- A long at 1x — cash equal to the full notional — has **no finite liquidation price**: no positive
+  price exhausts it, and the field is omitted.
+- A short at 1x liquidates when cNGN has strengthened to `entry x 2 / (1 + mm)`: with a 20%
+  maintenance rate, about 67% above entry. Leverage brings it closer.
+
+## Funding
+
+Funding accrues continuously on chain and settles into the account's cash; there is no funding
+timestamp to wait for. `ui_long_funding_rate_1h` is the chain's hourly rate as it is: positive
+means longs (long cNGN) pay shorts, negative means shorts pay longs. Annualise it as
+`rate x 24 x 365`; the `0.0000125` in the example below is about 11% a year.
+
+## cNGN as collateral
+
+When the perp's cNGN escrow is whitelisted on the SRM, `perp.collateral_assets` lists it and a
+trader can post cNGN as margin beside USDC. Each entry is the asset as the SRM values it:
+
+| Field | Scale | Meaning |
+| --- | --- | --- |
+| `symbol`, `asset_address` | | `cNGN` and the escrow's address — what a cNGN margin deposit approves and pays into. |
+| `margin_factor` | up to 18 decimals | The share of the asset's index value that counts as maintenance margin, for example `0.5`. |
+| `im_scale` | up to 18 decimals | Multiplies in again for initial margin. |
+| `cap`, `total` | up to 18 decimals | The escrow's collateral cap under the SRM and what is posted now, in cNGN. A deposit that would cross the cap reverts. |
+| `deposits_open` | boolean | Whether the escrow accepts deposits for the SRM yet. The SRM may credit the asset before that; a deposit offered in between reverts. |
+
+Read the haircut from `margin_factor` rather than assuming one. Note that cNGN posted as margin is
+itself long cNGN: the haircut is what liquidates a leveraged short when cNGN strengthens, so a
+short on a cNGN-collateralised account doubles the exposure. An account's posted cNGN appears
+under `accounts[].collateral` on `GET /v1/positions`, valued at the index with the margin credit
+beside it.
+
+## Index lag
+
+The on-chain index is a TWAP republished on an interval, so after a real move the venue's quotes
+can rest at a price the market has left. When the index-lag gate is configured, `perp.index_lag`
+reports the venue's latest spot sample against the index — `enforced`, `max_bps`, `lag_bps`
+(absent when the venue has no fresh sample), `spot_sample_at`, `spot_usdc_per_cngn` and
+`sample_age_sec` — and, while `enforced` and the lag exceeds `max_bps` or the venue is blind, new
+perp orders are refused with an `index_lag` error until the index catches up. Resting orders,
+cancels and liquidations are untouched.
+
+## Read a position
+
+```bash
+curl "https://api.numofx.com/v1/positions?subaccount_id=42"
+```
+
+Positions are public on chain, so the endpoint needs no signature. It returns the account's
+`positions` — `ui_side` is `long` when `engine_position` is positive, `ui_size` is the size in cNGN
+and `ui_notional_usdc` that size at the index — and its `accounts`, with cash, the two margin
+surpluses and any posted collateral, even before the first trade. The Numo app polls it every 15
+seconds. See [List positions](/api-reference/endpoint/positions) for every field and an example.
