@@ -2,3 +2,13 @@
 title: 'List trades'
 openapi: 'GET /v1/integrations/trades'
 ---
+
+Each trade is in the orientation `GET /v1/markets` advertises: `price` in **USDC per cNGN** to 10
+decimal places, `base_volume` the cNGN traded to 6 places, and `target_volume` the USDC it traded
+for (`price x base_volume`) to 18 places, all rounded to nearest. `type` is the taker's side in
+cNGN: `buy` means the taker acquired cNGN and paid USDC.
+
+`trade_id` is the same id `GET /v1/trades` reports, so the two feeds can be reconciled row by row.
+
+Responses are cached for up to 5 seconds and carry `Cache-Control: public, max-age=5`. The cache
+key is `ticker_id`, `limit` and `before_trade_id` only.

@@ -95,7 +95,7 @@
       "get": {
         "tags": ["Markets service"],
         "summary": "List tickers for integrators",
-        "description": "One ticker per enabled market, in the pair orientation GET /v1/markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On USDCcNGN-SPOT that is USDC priced in cNGN, the inverse of the engine values GET /v1/book and GET /v1/trades report. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "description": "One ticker per enabled market, in the pair orientation GET /v1/markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On USDCcNGN-SPOT and USDCcNGN-PERP that is cNGN priced in USDC, the same orientation as GET /v1/book and GET /v1/trades; nothing is inverted. Prices are USDC per cNGN to 10 decimal places: last_price, high, low and bid round down, ask rounds up, so the ticker agrees with the orderbook's top levels. base_volume is cNGN to 6 decimal places, target_volume USDC to 18, both rounded down. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
         "operationId": "listIntegrationTickers",
         "responses": {
           "200": {
@@ -116,7 +116,7 @@
       "get": {
         "tags": ["Markets service"],
         "summary": "Get orderbook for integrators",
-        "description": "Resting orders aggregated into price levels in the advertised pair orientation. On USDCcNGN-SPOT, bids are orders buying USDC and asks are orders selling it, priced in cNGN per USDC with quantities in USDC. Bid prices round down and ask prices round up to 6 decimal places, and quantities round down, so no level shows a better price or more size than is resting. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "description": "Resting orders aggregated into price levels in the advertised pair orientation. On USDCcNGN-SPOT and USDCcNGN-PERP, bids are orders buying cNGN and asks are orders selling it, priced in USDC per cNGN with quantities in cNGN. Bid prices round down and ask prices round up to 10 decimal places, and quantities round down to 6, so no level shows a better price or more size than is resting. Orders whose prices round to the same level are summed; a level whose quantity rounds to 0 is dropped. At most the first 1000 resting orders per side are read. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
         "operationId": "getIntegrationOrderbook",
         "parameters": [
           {
@@ -124,7 +124,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "A ticker_id from GET /v1/integrations/tickers, such as USDCcNGN-SPOT. An unknown value is rejected rather than answered with another market."
+            "description": "A ticker_id from GET /v1/integrations/tickers, such as USDCcNGN-SPOT. The symbol did not change with the cNGN-USDC orientation. An unknown value is rejected rather than answered with another market."
           },
           {
             "name": "depth",
@@ -157,7 +157,7 @@
       "get": {
         "tags": ["Markets service"],
         "summary": "List trades for integrators",
-        "description": "Fills newest first, in the advertised pair orientation. On USDCcNGN-SPOT, price is cNGN per USDC, base_volume is USDC and target_volume is cNGN. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "description": "Fills newest first, in the advertised pair orientation. On USDCcNGN-SPOT and USDCcNGN-PERP, price is USDC per cNGN to 10 decimal places, base_volume is the cNGN traded to 6 decimal places and target_volume the USDC it traded for to 18, all rounded to nearest. type is the taker's side in cNGN. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
         "operationId": "listIntegrationTrades",
         "parameters": [
           {
@@ -190,6 +190,49 @@
           },
           "400": {
             "description": "Missing or unknown ticker_id, or an invalid limit or before_trade_id",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/positions": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "List perp positions",
+        "description": "A subaccount's perpetual positions and margin accounts, read from chain at request time. Positions are public on chain, so no signature is required. Everything is in the cNGN-PERP orientation: prices in USDC per cNGN, sizes in cNGN, long means long cNGN and is a positive engine_position. positions holds one entry per perp market with a non-zero position; accounts one entry per enabled perp market whether or not a position is held. Both are [] rather than null when empty, and both are empty when the deployment serves no perp. Market prices and margin rates are cached for 10 seconds; the account's balances are read fresh on every request.",
+        "operationId": "listPositions",
+        "parameters": [
+          {
+            "name": "subaccount_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Base-10 subaccount id, a non-negative integer."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's perp positions and margin accounts",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PositionsResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "subaccount_id missing or not a non-negative integer",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "502": {
+            "description": "The position or account could not be read from chain. Retry.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -646,14 +689,14 @@
           "market": { "type": "string" },
           "contract_type": { "type": "string" },
           "settlement_type": { "type": "string" },
-          "base_asset_symbol": { "type": "string" },
-          "quote_asset_symbol": { "type": "string" },
+          "base_asset_symbol": { "type": "string", "description": "The asset priced and sized. cNGN on both markets.", "example": "cNGN" },
+          "quote_asset_symbol": { "type": "string", "description": "The asset prices are quoted in. USDC on both markets.", "example": "USDC" },
           "expiry_timestamp": { "type": "integer", "description": "Unix seconds at which the market expires. Omitted for markets that do not expire, including USDCcNGN-SPOT." },
-          "display_name": { "type": "string" },
-          "display_label": { "type": "string" },
+          "display_name": { "type": "string", "description": "Human-readable pair name: cNGN-USDC for USDCcNGN-SPOT, cNGN-PERP for USDCcNGN-PERP. The market symbol is the stable identifier; this is for display.", "example": "cNGN-USDC" },
+          "display_label": { "type": "string", "description": "Unit of every price on the market.", "example": "USDC per cNGN" },
           "tick_size": { "type": "string", "description": "Smallest price increment. Order prices are normalized against it." },
           "min_size": { "type": "string", "description": "Smallest tradable size. Order amounts are normalized against it, and an amount below it normalizes to zero and is rejected.", "example": "0.001" },
-          "contract_multiplier": { "type": "string", "description": "Units of the base asset per contract. 1 for the USDC/cNGN spot market.", "example": "1" },
+          "contract_multiplier": { "type": "string", "description": "Units of the base asset per contract. 1 on both markets.", "example": "1" },
           "settlement_note": { "type": "string" },
           "asset_address": { "type": "string" },
           "sub_id": { "type": "string" },
@@ -662,15 +705,147 @@
           "display_price_kind": { "type": "string", "enum": ["direct", "vol_percent"], "description": "How a client should render the price. All current markets are direct." },
           "display_semantics": { "type": "string", "enum": ["direct", "vol_percent"], "description": "Interpretation of the displayed price. Mirrors display_price_kind." },
           "last_trade_timestamp": { "type": "integer", "description": "Unix seconds of the most recent fill." },
-          "order_entry_spec": { "type": "string", "description": "Spot only. Identifies the order translation contract, such as usdc_cngn_spot_v1." },
-          "ui_price_unit": { "type": "string", "description": "Spot only. Unit of ui_intent.price.", "example": "cNGN per USDC" },
-          "ui_size_unit": { "type": "string", "description": "Spot only. Unit of ui_intent.size.", "example": "USDC notional" },
-          "ui_side_meaning": { "type": "string", "description": "Spot only. What each trader-facing side does." },
-          "engine_price_unit": { "type": "string", "description": "Spot only. Unit of the raw price and limit_price fields.", "example": "USDC per cNGN" },
-          "engine_amount_unit": { "type": "string", "description": "Spot only.", "example": "cNGN amount" },
-          "engine_side_policy": { "type": "string", "description": "Spot only. How trader side maps to engine side.", "example": "invert_ui_side" },
-          "ui_price_to_engine": { "type": "string", "description": "Spot only. Price conversion formula.", "example": "engine_price = 1 / ui_price" },
-          "ui_size_to_engine": { "type": "string", "description": "Spot only. Size conversion formula.", "example": "engine_amount = ui_size * ui_price" }
+          "order_entry_spec": { "type": "string", "description": "Identifies the ui_intent contract the market accepts: cngn_usdc_spot_v1 on USDCcNGN-SPOT, cngn_usdc_perp_v1 on USDCcNGN-PERP. Both are identity mappings: the engine order is the ui_intent. The retired usdc_cngn_* specs are refused.", "example": "cngn_usdc_spot_v1" },
+          "ui_price_unit": { "type": "string", "description": "Unit of ui_intent.price. The same as engine_price_unit.", "example": "USDC per cNGN" },
+          "ui_size_unit": { "type": "string", "description": "Unit of ui_intent.size: cNGN amount on spot, cNGN contracts on the perp.", "example": "cNGN amount" },
+          "ui_side_meaning": { "type": "string", "description": "What each side does, in cNGN. On spot: BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC. On the perp a BUY is a long of cNGN against USD.", "example": "BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC." },
+          "engine_price_unit": { "type": "string", "description": "Unit of the raw price and limit_price fields.", "example": "USDC per cNGN" },
+          "engine_amount_unit": { "type": "string", "description": "Unit of the raw desired_amount, filled_amount and size fields.", "example": "cNGN amount" },
+          "engine_side_policy": { "type": "string", "description": "How ui_intent.side maps to the engine side. Always same_as_ui: a buy is a buy of cNGN on both.", "example": "same_as_ui" },
+          "ui_price_to_engine": { "type": "string", "description": "Price conversion formula. The identity.", "example": "engine_price = ui_price" },
+          "ui_size_to_engine": { "type": "string", "description": "Size conversion formula. The identity.", "example": "engine_amount = ui_size" },
+          "trade_module_address": { "type": "string", "description": "The TradeModule an order for this market must name in action_json.module. The perp's differs from spot's." },
+          "quote_asset_address": { "type": "string", "description": "The asset the market is quoted and settled in: the wrapped USDC escrow on spot, the perp's CashAsset on the perp." },
+          "margin_manager_address": { "type": "string", "description": "The StandardManager (SRM) a trading account for this market is created under." },
+          "perp": {
+            "allOf": [{ "$ref": "#/components/schemas/PerpMarketState" }],
+            "description": "USDCcNGN-PERP only: the perp's live state read from chain. Omitted on spot."
+          }
+        }
+      },
+      "PerpMarketState": {
+        "type": "object",
+        "description": "The perp's live state from its own stack, in the cNGN-PERP orientation: prices in USDC per cNGN, sizes in cNGN. Cached for 10 seconds, except paused, which is re-read on every request. Decimal fields are strings without trailing zeros.",
+        "required": ["mark_price", "index_price", "mark_price_ui", "index_price_ui", "funding_rate_1h", "ui_long_funding_rate_1h", "funding_interval_seconds", "open_interest", "open_interest_usd", "initial_margin_rate", "maintenance_margin_rate", "max_leverage", "trade_module_address", "quote_asset_address", "margin_manager_address", "trading_enabled", "paused", "position_cap", "collateral_assets", "updated_at"],
+        "properties": {
+          "mark_price": { "type": "string", "description": "Mark price in USDC per cNGN, up to 18 decimal places.", "example": "0.00072" },
+          "index_price": { "type": "string", "description": "Index price in USDC per cNGN, up to 18 decimal places.", "example": "0.00072" },
+          "mark_price_ui": { "type": "string", "description": "Mark price to 10 decimal places. Empty string when the chain reports no positive price.", "example": "0.00072" },
+          "index_price_ui": { "type": "string", "description": "Index price to 10 decimal places. Empty string when the chain reports no positive price.", "example": "0.00072" },
+          "funding_rate_1h": { "type": "string", "description": "Hourly funding rate from chain, signed, up to 18 decimal places.", "example": "0.0000125" },
+          "ui_long_funding_rate_1h": { "type": "string", "description": "The same rate: positive means longs (long cNGN) pay shorts, negative means shorts pay longs. Annualise as rate x 24 x 365.", "example": "0.0000125" },
+          "funding_interval_seconds": { "type": "integer", "description": "3600.", "example": 3600 },
+          "open_interest": { "type": "string", "description": "Open interest in cNGN, up to 18 decimal places.", "example": "10000000" },
+          "open_interest_usd": { "type": "string", "description": "Open interest at the index, in USDC, to 6 decimal places.", "example": "7200" },
+          "initial_margin_rate": { "type": "string", "description": "The SRM's initial margin requirement as a fraction of notional at the mark.", "example": "0.33333" },
+          "maintenance_margin_rate": { "type": "string", "description": "The SRM's maintenance margin requirement as a fraction of notional at the mark.", "example": "0.2" },
+          "max_leverage": { "type": "string", "description": "1 / initial_margin_rate, to 2 decimal places. Empty string when the initial rate is zero.", "example": "3" },
+          "trade_module_address": { "type": "string", "description": "The perp's TradeModule: what action_json.module must name on a perp order." },
+          "quote_asset_address": { "type": "string", "description": "The perp's CashAsset: the USDC escrow margin is deposited into and PnL settles in." },
+          "margin_manager_address": { "type": "string", "description": "The perp's SRM: the manager a perp margin account is created under." },
+          "trading_enabled": { "type": "boolean", "description": "The chain's answer, read each refresh: the perp module is allowed on Matching, position_cap is above zero, and the SRM is not paused. Orders are accepted and rest while false; the matcher does not cross them." },
+          "paused": { "type": "boolean", "description": "The SRM guardian's pause. While true every adjustment on perp accounts reverts and new perp orders are refused with a trading_paused error." },
+          "position_cap": { "type": "string", "description": "The open-interest cap under the SRM, in cNGN, up to 18 decimal places.", "example": "50000000" },
+          "collateral_assets": {
+            "type": "array",
+            "description": "Base assets the SRM credits as margin besides cash: today at most the perp's cNGN escrow. Empty array when margin is cash only.",
+            "items": { "$ref": "#/components/schemas/PerpCollateralAsset" }
+          },
+          "index_lag": {
+            "allOf": [{ "$ref": "#/components/schemas/PerpIndexLag" }],
+            "description": "The index-lag gate's view. Omitted when the gate is not configured."
+          },
+          "updated_at": { "type": "integer", "description": "Unix seconds at which the block was read from chain." }
+        }
+      },
+      "PerpCollateralAsset": {
+        "type": "object",
+        "description": "One base asset a perp account may post as margin, as the SRM values it.",
+        "required": ["symbol", "asset_address", "margin_factor", "im_scale", "cap", "total", "deposits_open"],
+        "properties": {
+          "symbol": { "type": "string", "example": "cNGN" },
+          "asset_address": { "type": "string", "description": "The escrow a margin deposit of this asset approves and pays into." },
+          "margin_factor": { "type": "string", "description": "The share of the asset's index value that counts as maintenance margin, up to 18 decimal places.", "example": "0.5" },
+          "im_scale": { "type": "string", "description": "Multiplies in again for initial margin, up to 18 decimal places.", "example": "1" },
+          "cap": { "type": "string", "description": "The escrow's collateral cap under the SRM, in the asset, up to 18 decimal places. A deposit that would cross it reverts on chain." },
+          "total": { "type": "string", "description": "What is posted now under the SRM, in the asset, up to 18 decimal places." },
+          "deposits_open": { "type": "boolean", "description": "Whether the escrow accepts deposits for the SRM. The SRM may credit the asset before that, and a deposit offered in between reverts." }
+        }
+      },
+      "PerpIndexLag": {
+        "type": "object",
+        "description": "The venue's latest spot sample against the perp's on-chain index. While enforced and lag_bps exceeds max_bps, or no fresh sample exists, new perp orders are refused until the index catches up.",
+        "required": ["enforced", "max_bps"],
+        "properties": {
+          "enforced": { "type": "boolean", "description": "Whether the gate refuses orders, or only reports." },
+          "max_bps": { "type": "integer", "description": "The lag, in basis points, beyond which new perp orders are refused." },
+          "lag_bps": { "type": "integer", "description": "Spot's distance from the on-chain index in basis points, signed. Absent when the venue has no fresh sample." },
+          "spot_sample_at": { "type": "integer", "description": "Unix seconds of the latest good sample. Omitted when none." },
+          "spot_usdc_per_cngn": { "type": "string", "description": "The latest good sample, in USDC per cNGN, up to 18 decimal places. Omitted when none." },
+          "sample_age_sec": { "type": "integer", "description": "Age of the latest good sample. Omitted when none." }
+        }
+      },
+      "PositionsResponse": {
+        "type": "object",
+        "required": ["positions", "accounts"],
+        "properties": {
+          "positions": {
+            "type": "array",
+            "description": "One entry per perp market where the account holds a non-zero position. Empty array, never null.",
+            "items": { "$ref": "#/components/schemas/PerpPosition" }
+          },
+          "accounts": {
+            "type": "array",
+            "description": "One entry per enabled perp market, whether or not a position is held. Empty array, never null.",
+            "items": { "$ref": "#/components/schemas/PerpAccount" }
+          }
+        }
+      },
+      "PerpPosition": {
+        "type": "object",
+        "description": "A perp position in the cNGN-PERP orientation. Decimal fields are strings without trailing zeros.",
+        "required": ["market", "subaccount_id", "engine_position", "ui_side", "ui_size", "ui_notional_usdc", "mark_price_ui", "index_price_ui", "unrealized_pnl", "initial_margin_surplus", "maintenance_margin_surplus"],
+        "properties": {
+          "market": { "type": "string", "example": "USDCcNGN-PERP" },
+          "subaccount_id": { "type": "string", "example": "42" },
+          "engine_position": { "type": "string", "description": "The signed cNGN balance of the perp on chain, up to 18 decimal places. Positive is a long.", "example": "137400" },
+          "ui_side": { "type": "string", "enum": ["long", "short"], "description": "long when engine_position is positive, short when negative. A long is long cNGN." },
+          "ui_size": { "type": "string", "description": "|engine_position| in cNGN, to 6 decimal places.", "example": "137400" },
+          "ui_notional_usdc": { "type": "string", "description": "ui_size valued at the index, in USDC, to 6 decimal places.", "example": "100.0272" },
+          "mark_price_ui": { "type": "string", "description": "Mark price in USDC per cNGN to 10 decimal places.", "example": "0.0007278" },
+          "index_price_ui": { "type": "string", "description": "Index price in USDC per cNGN to 10 decimal places.", "example": "0.000728" },
+          "unrealized_pnl": { "type": "string", "description": "The position's unsettled and unrealized cash on chain, in USDC, signed, up to 18 decimal places.", "example": "-0.02748" },
+          "initial_margin_surplus": { "type": "string", "description": "The SRM's initial margin surplus for the account, in USDC, signed. Below zero means under initial margin.", "example": "6.63045" },
+          "maintenance_margin_surplus": { "type": "string", "description": "The SRM's maintenance margin surplus for the account, in USDC, signed. Below zero means liquidatable.", "example": "19.96708" },
+          "liquidation_price_ui": { "type": "string", "description": "Estimated price in USDC per cNGN at which the maintenance surplus reaches zero if nothing else changes, for an account holding only this position, to 10 decimal places. Omitted when no positive price gets there (a long at 1x, for example).", "example": "0.00054615" }
+        }
+      },
+      "PerpAccount": {
+        "type": "object",
+        "description": "The account's margin on a perp stack, whether or not it holds a position.",
+        "required": ["market", "subaccount_id", "cash", "initial_margin_surplus", "maintenance_margin_surplus", "collateral"],
+        "properties": {
+          "market": { "type": "string", "example": "USDCcNGN-PERP" },
+          "subaccount_id": { "type": "string", "example": "42" },
+          "cash": { "type": "string", "description": "Balance in the perp's CashAsset, in USDC, signed, up to 18 decimal places.", "example": "40" },
+          "initial_margin_surplus": { "type": "string", "description": "The SRM's initial margin surplus, in USDC. For an account with no position, its cash.", "example": "6.63045" },
+          "maintenance_margin_surplus": { "type": "string", "description": "The SRM's maintenance margin surplus, in USDC.", "example": "19.96708" },
+          "collateral": {
+            "type": "array",
+            "description": "Each base asset the account has posted as margin. Empty array when none is held, or margin is cash only.",
+            "items": { "$ref": "#/components/schemas/PerpAccountCollateral" }
+          }
+        }
+      },
+      "PerpAccountCollateral": {
+        "type": "object",
+        "required": ["symbol", "asset_address", "balance", "value_usd", "margin_value_usd"],
+        "properties": {
+          "symbol": { "type": "string", "example": "cNGN" },
+          "asset_address": { "type": "string", "description": "The escrow holding the collateral." },
+          "balance": { "type": "string", "description": "Posted balance in the asset, up to 18 decimal places." },
+          "value_usd": { "type": "string", "description": "The balance at the index, in USDC, up to 18 decimal places." },
+          "margin_value_usd": { "type": "string", "description": "value_usd x the asset's margin_factor: what the SRM credits as margin, in USDC." }
         }
       },
       "Order": {
@@ -782,14 +957,14 @@
       },
       "TradeStats24h": {
         "type": "object",
-        "description": "Stats over the trailing 24 hours, computed from the market's fills on each request: a rolling window, not the UTC day. Prices are raw engine values (USDC per cNGN on USDCcNGN-SPOT). Every field is omitted when nothing traded in the window.",
+        "description": "Stats over the trailing 24 hours, computed from the market's fills on each request: a rolling window, not the UTC day. Prices are raw engine values in USDC per cNGN, the same orientation as every other price. Every field is omitted when nothing traded in the window.",
         "properties": {
           "change": { "type": "string", "description": "Last price minus the window's first traded price, in engine price units." },
-          "high": { "type": "string", "description": "Highest engine price in the window. On USDCcNGN-SPOT, 1/high is the lowest cNGN-per-USDC price." },
+          "high": { "type": "string", "description": "Highest price in the window, in USDC per cNGN." },
           "last": { "type": "string", "description": "Most recent engine price in the window." },
-          "low": { "type": "string", "description": "Lowest engine price in the window. On USDCcNGN-SPOT, 1/low is the highest cNGN-per-USDC price." },
-          "volume": { "type": "string", "description": "Summed fill size in the engine's traded unit: whole cNGN on USDCcNGN-SPOT." },
-          "quote_volume": { "type": "string", "description": "Summed fill notional (price x size) in the quote asset: the USDC traded on USDCcNGN-SPOT. Use this, not volume, for a USDC figure." }
+          "low": { "type": "string", "description": "Lowest price in the window, in USDC per cNGN." },
+          "volume": { "type": "string", "description": "Summed fill size in cNGN, the base asset." },
+          "quote_volume": { "type": "string", "description": "Summed fill notional (price x size) in USDC, the quote asset. Use this, not volume, for a USDC figure." }
         }
       },
       "TradesResponse": {
@@ -806,34 +981,34 @@
       },
       "SpotUIIntent": {
         "type": "object",
-        "description": "Trader-facing view of a spot order, in the units a UI displays.",
+        "description": "The order in the units a UI displays: side in cNGN, price in USDC per cNGN to 10 decimal places, size in cNGN to 6. Since the cNGN-USDC orientation this equals engine_order; only the scale differs.",
         "properties": {
-          "side": { "type": "string", "enum": ["buy", "sell"], "description": "buy acquires USDC and sells cNGN inventory; sell delivers USDC and buys cNGN inventory." },
-          "price": { "type": "string", "description": "Price in cNGN per USDC. The reciprocal of the engine price.", "example": "1371.977018" },
-          "size": { "type": "string", "description": "Size as a USDC notional.", "example": "1.199729" }
+          "side": { "type": "string", "enum": ["buy", "sell"], "description": "buy acquires cNGN and pays USDC; sell delivers cNGN and receives USDC. On the perp, buy opens or extends a long of cNGN. Equals the engine side." },
+          "price": { "type": "string", "description": "Price in USDC per cNGN, to 10 decimal places. Equals the engine price.", "example": "0.0007278" },
+          "size": { "type": "string", "description": "Size in cNGN, to 6 decimal places. Equals the engine amount.", "example": "137400" }
         }
       },
       "SpotContract": {
         "type": "object",
-        "description": "Present only on spot markets. Restates the raw engine order in trader-facing terms. Read ui_intent.price for a price in cNGN per USDC; the sibling price and limit_price fields are raw engine values in USDC per cNGN.",
+        "description": "Present on USDCcNGN-SPOT and USDCcNGN-PERP. Restates the raw engine order at display scales. ui_intent and engine_order are the same order in the same orientation (USDC per cNGN, sized in cNGN); ui_intent prints the price to 10 decimal places and the size to 6, engine_order carries the engine's 18.",
         "properties": {
-          "spec": { "type": "string", "example": "usdc_cngn_spot_v1" },
+          "spec": { "type": "string", "description": "The market's order_entry_spec.", "example": "cngn_usdc_spot_v1" },
           "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
           "engine_order": {
             "type": "object",
-            "description": "The order as the matching engine sees it: cNGN traded against internal USDC cash.",
+            "description": "The order as the matching engine sees it: cNGN traded against the quote asset, at the engine's full scale.",
             "properties": {
-              "side": { "type": "string", "enum": ["buy", "sell"], "description": "Always the inverse of ui_intent.side." },
-              "price": { "type": "string", "description": "Engine price in USDC per cNGN.", "example": "0.000728875182750367" },
-              "amount": { "type": "string", "description": "Engine amount as a whole cNGN quantity.", "example": "1646" }
+              "side": { "type": "string", "enum": ["buy", "sell"], "description": "Always equals ui_intent.side." },
+              "price": { "type": "string", "description": "Engine price in USDC per cNGN.", "example": "0.0007278" },
+              "amount": { "type": "string", "description": "Engine amount in cNGN.", "example": "137400" }
             }
           },
           "balance_delta": {
             "type": "object",
-            "description": "Balance change if the order fills completely.",
+            "description": "Balance change if the order fills completely, signed, to 6 decimal places. A buy of size S at price P is cngn +S and usdc -S x P; a sell is cngn -S and usdc +S x P. On the perp this is the exposure a fill opens, not a token movement.",
             "properties": {
-              "usdc": { "type": "string", "example": "-1.199729" },
-              "cngn": { "type": "string", "example": "+1646" }
+              "usdc": { "type": "string", "example": "-99.99972" },
+              "cngn": { "type": "string", "example": "+137400" }
             }
           }
         }
@@ -868,9 +1043,9 @@
           "limit_price": { "type": "string" },
           "worst_fee": { "type": "string" },
           "expiry": { "type": "integer" },
-          "order_entry_spec": { "type": "string", "description": "Spot markets only — sending it on an order for any other market is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be exactly usdc_cngn_spot_v1 and ui_intent becomes required.", "example": "usdc_cngn_spot_v1" },
+          "order_entry_spec": { "type": "string", "description": "USDCcNGN-SPOT and USDCcNGN-PERP only — sending it on an order for any other market is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be the market's own spec — cngn_usdc_spot_v1 on spot, cngn_usdc_perp_v1 on the perp — and ui_intent becomes required. The retired usdc_cngn_spot_v1 and usdc_cngn_perp_v1 specs, and the other market's spec, are refused.", "example": "cngn_usdc_spot_v1" },
           "ui_intent": {
-            "description": "Spot markets only — sending it on an order for any other market is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it. If you send those fields as well, each must match the translation exactly or the order is rejected.",
+            "description": "USDCcNGN-SPOT and USDCcNGN-PERP only — sending it on an order for any other market is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it as the identity: side = ui_intent.side, limit_price = ui_intent.price (USDC per cNGN), desired_amount = ui_intent.size (cNGN). If you send those fields as well, each must equal its ui_intent counterpart or the order is rejected.",
             "allOf": [{ "$ref": "#/components/schemas/SpotUIIntent" }]
           },
           "action_json": {},
@@ -966,9 +1141,9 @@
           "trade_id": { "type": "integer", "description": "The trade this fill belongs to, as on GET /v1/trades." },
           "order_id": { "type": "string", "description": "Your order that filled." },
           "liquidity": { "type": "string", "enum": ["taker", "maker"], "description": "taker when your order crossed the book, maker when it rested and was hit." },
-          "side": { "type": "string", "enum": ["buy", "sell"], "description": "Your order's engine side. On the spot market, the inverse of spot_contract.ui_intent.side." },
-          "price": { "type": "string", "description": "Engine price the fill executed at, in USDC per cNGN." },
-          "size": { "type": "string", "description": "Engine size filled, in whole cNGN." },
+          "side": { "type": "string", "enum": ["buy", "sell"], "description": "Your order's side: buy acquired cNGN and paid USDC. Equals spot_contract.ui_intent.side." },
+          "price": { "type": "string", "description": "Price the fill executed at, in USDC per cNGN, at the engine's scale." },
+          "size": { "type": "string", "description": "Size filled, in cNGN, at the engine's scale." },
           "asset_address": { "type": "string" },
           "sub_id": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" },
@@ -978,7 +1153,7 @@
           "tx_hash": { "type": "string", "description": "The Base transaction that settled the fill. Absent for fills recorded before it was stored." },
           "spot_contract": {
             "$ref": "#/components/schemas/SpotContract",
-            "description": "The fill in trader terms: ui_intent.size is the USDC that changed hands and balance_delta what the fill moved."
+            "description": "The fill at display scales: ui_intent.size is the cNGN that changed hands, ui_intent.price the USDC per cNGN it traded at, and balance_delta what the fill moved."
           }
         }
       },
@@ -1054,19 +1229,19 @@
       },
       "IntegrationTicker": {
         "type": "object",
-        "description": "A market in its advertised orientation. Price fields are null, never omitted, when there is no value: no fill yet, no resting bid or ask, or nothing traded in the last 24 hours.",
+        "description": "A market in its advertised orientation: cNGN priced in USDC. Price fields are null, never omitted, when there is no value: no fill yet, no resting bid or ask, or nothing traded in the last 24 hours.",
         "required": ["ticker_id", "base_currency", "target_currency", "last_price", "base_volume", "target_volume", "bid", "ask", "high", "low"],
         "properties": {
-          "ticker_id": { "type": "string", "description": "Market symbol, such as USDCcNGN-SPOT. Pass it as ticker_id to the orderbook and trades endpoints." },
-          "base_currency": { "type": "string", "description": "The asset priced. USDC on USDCcNGN-SPOT." },
-          "target_currency": { "type": "string", "description": "The asset prices are quoted in. cNGN on USDCcNGN-SPOT." },
-          "last_price": { "type": ["string", "null"], "description": "Price of the most recent fill, at any age, in target_currency per base_currency." },
-          "base_volume": { "type": "string", "description": "Base asset traded over the trailing 24 hours. USDC on USDCcNGN-SPOT. 0 when nothing traded." },
-          "target_volume": { "type": "string", "description": "Target asset traded over the trailing 24 hours. cNGN on USDCcNGN-SPOT. 0 when nothing traded." },
-          "bid": { "type": ["string", "null"], "description": "Best bid. Equals the orderbook's top bid level price." },
-          "ask": { "type": ["string", "null"], "description": "Best ask. Equals the orderbook's top ask level price." },
-          "high": { "type": ["string", "null"], "description": "Highest fill price over the trailing 24 hours." },
-          "low": { "type": ["string", "null"], "description": "Lowest fill price over the trailing 24 hours." }
+          "ticker_id": { "type": "string", "description": "Market symbol, such as USDCcNGN-SPOT. Pass it as ticker_id to the orderbook and trades endpoints. The symbol names the pair in the legacy order; base_currency and target_currency are authoritative." },
+          "base_currency": { "type": "string", "description": "The asset priced. cNGN on USDCcNGN-SPOT and USDCcNGN-PERP.", "example": "cNGN" },
+          "target_currency": { "type": "string", "description": "The asset prices are quoted in. USDC on USDCcNGN-SPOT and USDCcNGN-PERP.", "example": "USDC" },
+          "last_price": { "type": ["string", "null"], "description": "Price of the most recent fill, at any age, in target_currency per base_currency (USDC per cNGN), rounded down to 10 decimal places.", "example": "0.0007278" },
+          "base_volume": { "type": "string", "description": "Base asset (cNGN) traded over the trailing 24 hours, rounded down to 6 decimal places. 0 when nothing traded." },
+          "target_volume": { "type": "string", "description": "Target asset (USDC) traded over the trailing 24 hours, rounded down to 18 decimal places. 0 when nothing traded." },
+          "bid": { "type": ["string", "null"], "description": "Best bid in USDC per cNGN, rounded down to 10 decimal places. Equals the orderbook's top bid level price." },
+          "ask": { "type": ["string", "null"], "description": "Best ask in USDC per cNGN, rounded up to 10 decimal places. Equals the orderbook's top ask level price." },
+          "high": { "type": ["string", "null"], "description": "Highest fill price over the trailing 24 hours, in USDC per cNGN, rounded down to 10 decimal places." },
+          "low": { "type": ["string", "null"], "description": "Lowest fill price over the trailing 24 hours, in USDC per cNGN, rounded down to 10 decimal places." }
         }
       },
       "IntegrationOrderbookResponse": {
@@ -1077,22 +1252,22 @@
           "timestamp": { "type": "integer", "description": "Unix milliseconds at which the book was read." },
           "bids": {
             "type": "array",
-            "description": "Levels buying the base asset, highest price first. Empty array, never null, when there are none.",
+            "description": "Levels buying cNGN, highest price first. Empty array, never null, when there are none.",
             "items": { "$ref": "#/components/schemas/IntegrationLevel" }
           },
           "asks": {
             "type": "array",
-            "description": "Levels selling the base asset, lowest price first. Empty array, never null, when there are none.",
+            "description": "Levels selling cNGN, lowest price first. Empty array, never null, when there are none.",
             "items": { "$ref": "#/components/schemas/IntegrationLevel" }
           }
         }
       },
       "IntegrationLevel": {
         "type": "array",
-        "description": "[price, quantity]: price in target_currency per base_currency, quantity in base_currency, summed over the resting orders at that price.",
+        "description": "[price, quantity]: price in USDC per cNGN to 10 decimal places (bids rounded down, asks up), quantity in cNGN to 6 decimal places rounded down, summed over the resting orders at that price.",
         "prefixItems": [
-          { "type": "string", "description": "Price" },
-          { "type": "string", "description": "Quantity in the base asset" }
+          { "type": "string", "description": "Price in USDC per cNGN" },
+          { "type": "string", "description": "Quantity in cNGN" }
         ],
         "minItems": 2,
         "maxItems": 2
@@ -1102,11 +1277,11 @@
         "required": ["trade_id", "price", "base_volume", "target_volume", "trade_timestamp", "type"],
         "properties": {
           "trade_id": { "type": "integer", "description": "The same trade_id GET /v1/trades reports." },
-          "price": { "type": "string", "description": "target_currency per base_currency. cNGN per USDC on USDCcNGN-SPOT." },
-          "base_volume": { "type": "string", "description": "Base asset traded. USDC on USDCcNGN-SPOT." },
-          "target_volume": { "type": "string", "description": "Target asset traded. cNGN on USDCcNGN-SPOT." },
+          "price": { "type": "string", "description": "target_currency per base_currency: USDC per cNGN, to 10 decimal places.", "example": "0.0007278" },
+          "base_volume": { "type": "string", "description": "Base asset traded: cNGN, to 6 decimal places.", "example": "137400" },
+          "target_volume": { "type": "string", "description": "Target asset traded: USDC (price x base_volume), to 18 decimal places.", "example": "99.99972" },
           "trade_timestamp": { "type": "integer", "description": "Unix milliseconds." },
-          "type": { "type": "string", "enum": ["buy", "sell"], "description": "The taker's side in the base asset: buy means the taker acquired it." }
+          "type": { "type": "string", "enum": ["buy", "sell"], "description": "The taker's side in cNGN: buy means the taker acquired cNGN and paid USDC." }
         }
       },
       "IntegrationTradesResponse": {

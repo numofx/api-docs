@@ -22,10 +22,11 @@ shows order history needs no second signature.
 ## Reading a fill
 
 - `liquidity` is `taker` when your order crossed the book, `maker` when it rested and was hit.
-- `side`, `price` and `size` are the engine's: your order's engine side, the price in USDC per cNGN,
-  and the size in whole cNGN.
-- On the spot market, `spot_contract.ui_intent` restates the fill in trader terms: `side` (`buy`
-  acquires USDC), `price` in cNGN per USDC, and `size` as the USDC that changed hands.
+- `side`, `price` and `size` are the engine's: your order's side, the price in USDC per cNGN, and
+  the size in cNGN. `buy` means your order acquired cNGN and paid USDC.
+- `spot_contract.ui_intent` restates the fill at display scales — the same `side`, `price` to 10
+  decimal places and `size` in cNGN to 6 — and `balance_delta` is what the fill moved: cNGN by the
+  size, USDC by size times price, signed by side.
 - A trade between two of your own orders, on different subaccounts, is listed twice — once for each
   order — because each moved that account's balances. Both rows share a `trade_id`.
 

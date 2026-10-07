@@ -2,3 +2,15 @@
 title: 'Get orderbook'
 openapi: 'GET /v1/integrations/orderbook'
 ---
+
+Levels are `[price, quantity]` with the price in **USDC per cNGN** and the quantity in **cNGN**.
+`bids` are orders buying cNGN, highest price first; `asks` are orders selling it, lowest first. This
+is the same orientation as `GET /v1/book`, so nothing needs inverting between the two.
+
+Prices are rounded to 10 decimal places away from the touch — bids down, asks up — and quantities
+round down to 6 places, so no level shows a better price or more size than is resting. Orders whose
+prices round to the same level are summed into one; a level whose quantity rounds to `0` is dropped.
+The service reads at most the first 1000 resting orders per side when building levels.
+
+Responses are cached for up to 5 seconds and carry `Cache-Control: public, max-age=5`. The cache
+key is `ticker_id` and `depth` only; other query parameters do not bypass it.

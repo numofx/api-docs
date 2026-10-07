@@ -1,0 +1,95 @@
+---
+title: 'List positions'
+openapi: 'GET /v1/positions'
+---
+
+Returns a subaccount's perpetual positions and margin accounts, read from chain at request time.
+Positions are public on chain, so no signature is required: pass the `subaccount_id` and read.
+
+The response always has two arrays, each `[]` rather than `null` when empty:
+
+- `positions` — one entry per perp market where the account holds a non-zero position.
+- `accounts` — one entry per enabled perp market, whether or not the account holds a position: its
+  cash and margin surpluses are what a ticket shows as available before the first trade.
+
+Both are empty when this deployment serves no perp.
+
+## Reading a position
+
+Everything is in the cNGN-PERP orientation: prices in USDC per cNGN, sizes in cNGN, and long means
+long cNGN.
+
+- `engine_position` is the signed cNGN balance of the perp on chain, as a decimal string with up to
+  18 places. Positive is a long.
+- `ui_side` is `long` when `engine_position` is positive, `short` when negative. `ui_size` is its
+  magnitude in cNGN and `ui_notional_usdc` that size valued at the index, both to 6 decimal places.
+- `mark_price_ui` and `index_price_ui` are the market's mark and index to 10 decimal places, the
+  same values as the `perp` block on [`GET /v1/markets`](/api-reference/endpoint/get).
+- `unrealized_pnl` is the position's unsettled and unrealized cash on chain, in USDC, signed.
+- `initial_margin_surplus` and `maintenance_margin_surplus` are the SRM's own figures for the
+  account, in USDC. Below zero means the account is under that margin; a negative maintenance
+  surplus means it can be liquidated.
+- `liquidation_price_ui` is an estimate: the price in USDC per cNGN at which the maintenance surplus
+  reaches zero if nothing else changes, for an account holding only this position. It is **omitted**
+  when no positive price gets there — a long at 1x, for example.
+
+## Reading an account
+
+- `cash` is the account's balance in the perp's CashAsset, in USDC, signed.
+- `initial_margin_surplus` and `maintenance_margin_surplus` are as above. For an account with no
+  position the initial surplus is its cash.
+- `collateral` lists each base asset the account has posted as margin: `symbol`, `asset_address`,
+  `balance` in that asset, `value_usd` at the index and `margin_value_usd`, the share the SRM credits
+  after its `margin_factor`. Empty when nothing is posted, or margin is cash only.
+
+Decimal fields read from chain are strings with up to 18 decimal places and no trailing zeros.
+
+## Example
+
+A long of 137,400 cNGN with 40 USDC of margin, at a mark of 0.0007278:
+
+```json
+{
+  "positions": [
+    {
+      "market": "USDCcNGN-PERP",
+      "subaccount_id": "42",
+      "engine_position": "137400",
+      "ui_side": "long",
+      "ui_size": "137400",
+      "ui_notional_usdc": "100.0272",
+      "mark_price_ui": "0.0007278",
+      "index_price_ui": "0.000728",
+      "unrealized_pnl": "-0.02748",
+      "initial_margin_surplus": "6.63045",
+      "maintenance_margin_surplus": "19.96708",
+      "liquidation_price_ui": "0.00054615"
+    }
+  ],
+  "accounts": [
+    {
+      "market": "USDCcNGN-PERP",
+      "subaccount_id": "42",
+      "cash": "40",
+      "initial_margin_surplus": "6.63045",
+      "maintenance_margin_surplus": "19.96708",
+      "collateral": []
+    }
+  ]
+}
+```
+
+## Polling
+
+The market's mark, index and margin rates are cached for 10 seconds server-side; the account's
+balances and surpluses are read from chain on every request. The Numo app polls this endpoint every
+15 seconds, which is ample: funding accrues continuously, so there is no settlement instant to catch.
+
+## Errors
+
+| Status | Error | Cause |
+| ------ | ----- | ----- |
+| `400` | `subaccount_id is required` | The query parameter is missing. |
+| `400` | `subaccount_id must be a non-negative integer` | Not a base-10 unsigned integer. |
+| `502` | `could not read positions from chain` | The RPC read of the position failed. Retry. |
+| `502` | `could not read the account from chain` | The RPC read of the account's margin failed. Retry. |
