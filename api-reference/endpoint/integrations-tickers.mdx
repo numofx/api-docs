@@ -2,3 +2,15 @@
 title: 'List tickers'
 openapi: 'GET /v1/integrations/tickers'
 ---
+
+Each ticker is in the orientation `GET /v1/markets` advertises: `base_currency` is `cNGN` and
+`target_currency` is `USDC`, so every price is **USDC per cNGN** (about `0.00073`), `base_volume`
+is cNGN and `target_volume` is USDC. The `ticker_id` is still `USDCcNGN-SPOT` — the symbol did not
+change with the orientation; read the two currency fields rather than parsing it.
+
+Prices are rounded to 10 decimal places the same way the orderbook rounds its top levels: `bid`,
+`last_price`, `high` and `low` round down, `ask` rounds up. Volumes round down, `base_volume` to 6
+places and `target_volume` to 18.
+
+Responses are cached for up to 5 seconds and carry `Cache-Control: public, max-age=5`. Polling
+faster than that returns the same body.

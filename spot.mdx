@@ -1,11 +1,34 @@
 ---
 title: "Spot market"
-description: "Read USDC/cNGN spot prices, and translate between trader-facing and engine units"
+description: "Read cNGN-USDC spot prices, and the order contract behind them"
 ---
 
-The USDC/cNGN spot market reports its prices in two different units. Read this before
-integrating against spot — a price read from the wrong field is off by a factor of roughly
-1,370.
+The cNGN-USDC spot market quotes cNGN in USDC. Every price the Numo API reports for it — on the
+book, in trades, in candles, and in the `ui_intent` you submit — is **USDC per cNGN**, about
+`0.00073`, and every size is a quantity of **cNGN**. Read this before integrating against spot.
+
+<Note>
+  **What changed.** From `YYYY-MM-DD` (operator: fill in the cutover date) the pair is quoted as
+  cNGN-USDC: base cNGN, quote USDC. Before that it was quoted the other way, as USDC priced in cNGN
+  with sizes in USDC, and the API translated between the two.
+
+  - The symbols did **not** change. `USDCcNGN-SPOT` and `USDCcNGN-PERP` are still the identifiers
+    you pass as `symbol`, `market` and `ticker_id`. Only `display_name` moved, to `cNGN-USDC` and
+    `cNGN-PERP`.
+  - If you read `/v1/integrations/tickers`, `/orderbook` or `/trades`: `base_currency` is now `cNGN`
+    and `target_currency` `USDC`. Prices are USDC per cNGN, `base_volume` and book quantities are
+    cNGN, `target_volume` is USDC. A `buy` is a buy of cNGN.
+  - If you submit `ui_intent`: send `order_entry_spec: "cngn_usdc_spot_v1"` (or
+    `cngn_usdc_perp_v1` on the perp), a price in USDC per cNGN, a size in cNGN, and the side you mean
+    in cNGN. The engine order is now identical to the intent — nothing is inverted, and no formula
+    stands between them. The old `usdc_cngn_*_v1` specs are refused.
+  - If you read `ui_intent` on orders, trades or fills: `price` is USDC per cNGN, `size` is cNGN, and
+    `side` equals the engine side.
+  - `stats_24h` and candles were already in this orientation and did not change. The remarks about
+    reading `1/high` as a low no longer apply: `high` is the high.
+
+  To show a naira rate, compute `1 / price` yourself. The Numo app shows it as a secondary line only.
+</Note>
 
 ## Discover the market
 
@@ -16,8 +39,10 @@ curl "https://api.numofx.com/v1/markets"
 Look for:
 
 - `market = "USDCcNGN-SPOT"`
+- `display_name = "cNGN-USDC"`
 - `contract_type = "spot"`
-- `order_entry_spec = "usdc_cngn_spot_v1"`
+- `base_asset_symbol = "cNGN"` and `quote_asset_symbol = "USDC"`
+- `order_entry_spec = "cngn_usdc_spot_v1"`
 
 Prefer the `market` symbol over `asset_address` and `sub_id` when you call the read endpoints. The
 symbol is stable; the address pair can change between deployments.
@@ -28,64 +53,76 @@ symbol is stable; the address pair can change between deployments.
 curl "https://api.numofx.com/v1/book?symbol=USDCcNGN-SPOT"
 ```
 
-Every order in the response carries a `spot_contract` object. Read the price from it:
+Every order in the response carries a `spot_contract` object that restates it at the scales a
+display uses. A bid to buy 137,400 cNGN at 0.0007278 USDC each looks like this:
 
 ```json
 {
-  "limit_price": "0.000728875182750367",
+  "side": "buy",
+  "limit_price": "0.0007278",
+  "desired_amount": "137400",
   "spot_contract": {
-    "spec": "usdc_cngn_spot_v1",
-    "ui_intent": { "side": "sell", "price": "1371.977018", "size": "1.199729" },
-    "engine_order": { "side": "buy", "price": "0.000728875182750367", "amount": "1646" },
-    "balance_delta": { "usdc": "-1.199729", "cngn": "+1646" }
+    "spec": "cngn_usdc_spot_v1",
+    "ui_intent": { "side": "buy", "price": "0.0007278", "size": "137400" },
+    "engine_order": { "side": "buy", "price": "0.0007278", "amount": "137400" },
+    "balance_delta": { "usdc": "-99.99972", "cngn": "+137400" }
   }
 }
 ```
 
-<Warning>
-  Read `spot_contract.ui_intent.price`, not the top-level `price` or `limit_price`.
+`ui_intent` and `engine_order` are the same order. The only difference is scale: `ui_intent` prints
+the price to 10 decimal places and the size to 6, while `engine_order` and the top-level
+`limit_price` and `desired_amount` carry the engine's full 18 places. Read whichever suits your
+parser; they never disagree.
 
-  The engine trades cNGN against internal USDC cash, so its native price is **USDC per cNGN**
-  (`0.000728875…`). `ui_intent.price` is the reciprocal — **cNGN per USDC** (`1371.977018`) — which
-  is the number a person expects to see. Reading the raw field yields a price near zero, which
-  usually looks like a broken response rather than a unit mismatch.
+<Warning>
+  A price near `0.0007` is correct, not a broken response. The quote currency is USDC, so one cNGN
+  costs a fraction of a dollar.
+
+  If your display wants naira per dollar, compute `1 / price` — `1 / 0.0007278 = 1373.99` — and
+  label it as a derived figure. Do not feed the reciprocal back into an order: `ui_intent.price`
+  is always USDC per cNGN.
 </Warning>
 
-`GET /v1/markets` publishes the conversion rules inline on the spot entry, so you can assert them
-at runtime rather than hardcoding them:
+`GET /v1/markets` publishes the contract inline on the spot entry, so you can assert it at runtime
+rather than hardcoding it:
 
 | Field | Value |
 | --- | --- |
-| `ui_price_unit` | `cNGN per USDC` |
+| `ui_price_unit` | `USDC per cNGN` |
+| `ui_size_unit` | `cNGN amount` |
+| `ui_side_meaning` | `BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC.` |
 | `engine_price_unit` | `USDC per cNGN` |
-| `ui_price_to_engine` | `engine_price = 1 / ui_price` |
-| `ui_size_to_engine` | `engine_amount = ui_size * ui_price` |
-| `engine_side_policy` | `invert_ui_side` |
+| `engine_amount_unit` | `cNGN amount` |
+| `engine_side_policy` | `same_as_ui` |
+| `ui_price_to_engine` | `engine_price = ui_price` |
+| `ui_size_to_engine` | `engine_amount = ui_size` |
 
-## Book sides are named for the engine
+## Book sides read the normal way
 
-`bids` and `asks` describe the **engine's** view, and the engine side is always the inverse of the
-trader's. In trader terms the arrays read backwards:
+`bids` are orders buying cNGN and `asks` are orders selling it, and the trader's side is the engine's
+side:
 
-| Array | Engine side | What it means for you |
+| Array | Side | What it means for you |
 | --- | --- | --- |
-| `bids` | buy cNGN | the price at which you **buy** USDC |
-| `asks` | sell cNGN | the price at which you **sell** USDC |
+| `bids` | buy cNGN | the price at which you can **sell** cNGN for USDC |
+| `asks` | sell cNGN | the price at which you can **buy** cNGN with USDC |
 
-Each order also carries `spot_contract.ui_intent.side`, which states the trader-facing direction
-directly. Branch on that rather than on the array name.
+Each order also carries `spot_contract.ui_intent.side`, which is the same value as its top-level
+`side`.
 
-A mid price, with the sides read correctly:
+A mid price:
 
 ```bash
 curl -s "https://api.numofx.com/v1/book?symbol=USDCcNGN-SPOT" | python3 -c '
 import json, sys
 book = json.load(sys.stdin)
-buy  = float(book["bids"][0]["spot_contract"]["ui_intent"]["price"])
-sell = float(book["asks"][0]["spot_contract"]["ui_intent"]["price"])
-print(f"buy USDC  @ {buy:.4f} cNGN")
-print(f"sell USDC @ {sell:.4f} cNGN")
-print(f"mid       {(buy + sell) / 2:.4f} cNGN")'
+bid = float(book["bids"][0]["spot_contract"]["ui_intent"]["price"])
+ask = float(book["asks"][0]["spot_contract"]["ui_intent"]["price"])
+mid = (bid + ask) / 2
+print(f"bid  {bid:.7f} USDC per cNGN")
+print(f"ask  {ask:.7f} USDC per cNGN")
+print(f"mid  {mid:.7f} USDC per cNGN  ({1 / mid:.2f} cNGN per USDC)")'
 ```
 
 ## Prefer the book over the last trade
@@ -102,14 +139,16 @@ identical. The book quotes continuously, so a mid price stays current even when 
   the arrays come back empty.
 </Note>
 
-## Candles
+## Candles and 24h stats
 
 ```bash
 curl "https://api.numofx.com/v1/candles?symbol=USDCcNGN-SPOT&interval=1h&limit=200"
 ```
 
-Candle prices are **raw engine values** with no `spot_contract` wrapper, so invert them yourself:
-`ui_price = 1 / engine_price`. Buckets with no trades are absent rather than zero-filled.
+Candle prices and `stats_24h` are raw engine values with no `spot_contract` wrapper. They are in
+the same unit as everything else — USDC per cNGN — so use them as they are: `high` is the highest
+price paid for a cNGN in the bucket, `volume` is cNGN traded and `quote_volume` the USDC it traded
+for. Buckets with no trades are absent rather than zero-filled.
 
 ## Polling and streaming
 
@@ -123,17 +162,30 @@ server-side clients are unaffected by the browser origin allowlist.
 
 ## Submitting spot orders
 
-The same translation applies in reverse when you place an order. Send trader-facing values in
-`ui_intent`, and the engine values in the signed `action_json.data`:
+Send the order you mean in `ui_intent`, with `order_entry_spec` set to the market's own spec. The
+engine order is the identity of the intent:
 
 ```text
-engine_price  = 1 / ui_price
-engine_amount = ui_size * ui_price
-engine_side   = inverse of ui_side
+engine_side   = ui_side
+engine_price  = ui_price      (USDC per cNGN)
+engine_amount = ui_size       (cNGN)
 ```
 
-`order_entry_spec` and `ui_intent` are accepted on spot orders only — omit both on every other
-market. See [Authentication and signing](/signing) for building the signed payload, and
+So the values you sign into `action_json.data` are the same numbers as `ui_intent`, scaled to wei.
+There is no inversion and no derived size any more. When you also send `side`, `limit_price` or
+`desired_amount`, each must equal the corresponding `ui_intent` field or the order is rejected.
+
+A fill of the whole order moves balances by `balance_delta`: a buy of size `S` at price `P` is cNGN
+`+S` and USDC `-S x P`; a sell is cNGN `-S` and USDC `+S x P`.
+
+`order_entry_spec` and `ui_intent` are accepted on the two markets that carry the contract —
+`USDCcNGN-SPOT` with `cngn_usdc_spot_v1` and `USDCcNGN-PERP` with `cngn_usdc_perp_v1` — and
+refused everywhere else. The spec must be the market's own: an intent sent with the other market's
+spec, or with a retired `usdc_cngn_*_v1` spec, is rejected with
+`order_entry_spec must be "cngn_usdc_spot_v1" for this market's ui_intent`. Omit both fields to
+submit raw engine values, which on these markets are the same values anyway.
+
+See [Authentication and signing](/signing) for building the signed payload, and
 [Create order](/api-reference/endpoint/create) for the full request body.
 
 ## Fees follow arrival order, not identity

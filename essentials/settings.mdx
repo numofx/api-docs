@@ -25,9 +25,11 @@ Use `GET /v1/markets` before you submit anything. The response contains the cano
 - `sub_id`
 - `contract_type`
 - `settlement_type`
-- `display_name`
+- `base_asset_symbol` and `quote_asset_symbol` — `cNGN` and `USDC` on both markets
+- `display_name` — `cNGN-USDC` for spot, `cNGN-PERP` for the perp
 - `tick_size`
-- `order_entry_spec` when a market has a specialized UI contract
+- `order_entry_spec` — `cngn_usdc_spot_v1` or `cngn_usdc_perp_v1`, the `ui_intent` contract the
+  market accepts
 
 ## Reading the book
 
@@ -62,8 +64,8 @@ The response includes:
 - `next_before_trade_id`
 
 `stats_24h` covers the trailing 24 hours, recomputed from the market's fills on each request. Its
-prices are raw engine values; `volume` is in the traded unit (cNGN) and `quote_volume` in the quote
-asset (USDC). Every field is omitted when nothing traded in the window.
+prices are in USDC per cNGN, like every other price; `volume` is in cNGN and `quote_volume` in USDC.
+Every field is omitted when nothing traded in the window.
 
 For the fills on your own orders, with the fee paid and the settling transaction, use the signed
 [List fills](/api-reference/endpoint/fills) endpoint.

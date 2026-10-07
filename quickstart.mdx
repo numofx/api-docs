@@ -23,9 +23,10 @@ Query `markets-service` first so you know which instruments are enabled in the m
 curl "$MARKETS_SERVICE_URL/v1/markets"
 ```
 
-For the USDC/cNGN market, look for:
+For the cNGN-USDC spot market, look for:
 
 - `market = "USDCcNGN-SPOT"`
+- `display_name = "cNGN-USDC"`
 - `contract_type = "spot"`
 - `settlement_type = "spot"`
 - `asset_address` and `sub_id`
