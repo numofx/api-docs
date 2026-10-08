@@ -1,0 +1,28 @@
+---
+title: "Changelog"
+description: "Changes to the Numo API, newest first"
+---
+
+<Update label="2026-10-08" description="Market identifiers">
+  **The markets are identified as `cNGN-USDC` and `cNGN-PERP`.** These are the values `market`,
+  `symbol` and `ticker_id` carry everywhere, matching `display_name`. `GET /v1/markets` and
+  `GET /v1/integrations/tickers` list the canonical identifiers only. Every response and websocket
+  frame names the market by its canonical identifier, whichever identifier the request used.
+
+  **The old identifiers are deprecated aliases until 2027-01-06.** `USDCcNGN-SPOT` and
+  `USDCcNGN-PERP` still resolve, by exact match, wherever an identifier is read: `symbol`,
+  `market` and `ticker_id`, including websocket subscribe and unsubscribe. A request that uses one
+  returns the same data as the canonical request plus two headers: `Deprecation: true` and
+  `X-Canonical-Market: <canonical identifier>`. On 2027-01-06 the aliases are removed and such
+  requests return `400 unknown_market`.
+
+  **An unknown or missing market is now a 400.** `GET /v1/book`, `GET /v1/trades` and
+  `GET /v1/candles` return `{"error": "unknown_market", "message": …, "markets": [...]}` when the
+  `symbol` or `asset_address` + `sub_id` names no listed market (`no such market: <identifier>`),
+  or when the request names no market at all (`symbol or asset_address is required`). Before this
+  change both cases silently returned the spot book, so a client that sent a wrong identifier read
+  spot prices and never saw an error. See [Errors](/errors#instrument).
+
+  Unchanged: `display_name`, `order_entry_spec` (`cngn_usdc_spot_v1` and `cngn_usdc_perp_v1`),
+  every address, and the `asset_address` + `sub_id` form of naming a market.
+</Update>

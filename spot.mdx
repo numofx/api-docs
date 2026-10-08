@@ -12,9 +12,10 @@ book, in trades, in candles, and in the `ui_intent` you submit — is **USDC per
   cNGN-USDC: base cNGN, quote USDC. Before that it was quoted the other way, as USDC priced in cNGN
   with sizes in USDC, and the API translated between the two.
 
-  - The symbols did **not** change. `USDCcNGN-SPOT` and `USDCcNGN-PERP` are still the identifiers
-    you pass as `symbol`, `market` and `ticker_id`. Only `display_name` moved, to `cNGN-USDC` and
-    `cNGN-PERP`.
+  - The identifiers changed on 2026-10-08, after the orientation did: `cNGN-USDC` and `cNGN-PERP`
+    are now what you pass as `symbol`, `market` and `ticker_id`, matching `display_name`. The old
+    `USDCcNGN-SPOT` and `USDCcNGN-PERP` remain deprecated aliases until 2027-01-06 (see the note
+    under [Discover the market](#discover-the-market)).
   - If you read `/v1/integrations/tickers`, `/orderbook` or `/trades`: `base_currency` is now `cNGN`
     and `target_currency` `USDC`. Prices are USDC per cNGN, `base_volume` and book quantities are
     cNGN, `target_volume` is USDC. A `buy` is a buy of cNGN.
@@ -38,7 +39,7 @@ curl "https://api.numofx.com/v1/markets"
 
 Look for:
 
-- `market = "USDCcNGN-SPOT"`
+- `market = "cNGN-USDC"`
 - `display_name = "cNGN-USDC"`
 - `contract_type = "spot"`
 - `base_asset_symbol = "cNGN"` and `quote_asset_symbol = "USDC"`
@@ -47,10 +48,18 @@ Look for:
 Prefer the `market` symbol over `asset_address` and `sub_id` when you call the read endpoints. The
 symbol is stable; the address pair can change between deployments.
 
+<Note>
+  **Deprecated identifier.** Until 2027-01-06 the old identifier `USDCcNGN-SPOT` is accepted as an
+  exact-match alias for `cNGN-USDC` everywhere an identifier is read: `symbol`, `market` and
+  `ticker_id`. A request that uses it returns the same data as one that uses `cNGN-USDC`, names the
+  market `cNGN-USDC` in the body, and carries two response headers: `Deprecation: true` and
+  `X-Canonical-Market: cNGN-USDC`. Switch to `cNGN-USDC` before the removal date.
+</Note>
+
 ## Read the current price
 
 ```bash
-curl "https://api.numofx.com/v1/book?symbol=USDCcNGN-SPOT"
+curl "https://api.numofx.com/v1/book?symbol=cNGN-USDC"
 ```
 
 Every order in the response carries a `spot_contract` object that restates it at the scales a
@@ -114,7 +123,7 @@ Each order also carries `spot_contract.ui_intent.side`, which is the same value 
 A mid price:
 
 ```bash
-curl -s "https://api.numofx.com/v1/book?symbol=USDCcNGN-SPOT" | python3 -c '
+curl -s "https://api.numofx.com/v1/book?symbol=cNGN-USDC" | python3 -c '
 import json, sys
 book = json.load(sys.stdin)
 bid = float(book["bids"][0]["spot_contract"]["ui_intent"]["price"])
@@ -142,7 +151,7 @@ identical. The book quotes continuously, so a mid price stays current even when 
 ## Candles and 24h stats
 
 ```bash
-curl "https://api.numofx.com/v1/candles?symbol=USDCcNGN-SPOT&interval=1h&limit=200"
+curl "https://api.numofx.com/v1/candles?symbol=cNGN-USDC&interval=1h&limit=200"
 ```
 
 Candle prices and `stats_24h` are raw engine values with no `spot_contract` wrapper. They are in
@@ -156,7 +165,7 @@ No rate limit is enforced. Polling every one to five seconds is ample for a disp
 considerate rather than aggressive.
 
 For anything latency-sensitive, subscribe to the [websocket stream](/api-reference/websocket)
-instead. Use the `book` and `trades` channels with `"market": "USDCcNGN-SPOT"`, seed from the
+instead. Use the `book` and `trades` channels with `"market": "cNGN-USDC"`, seed from the
 `snapshot` frame, and apply `update` deltas. Public channels need no authentication, and
 server-side clients are unaffected by the browser origin allowlist.
 
@@ -179,7 +188,7 @@ A fill of the whole order moves balances by `balance_delta`: a buy of size `S` a
 `+S` and USDC `-S x P`; a sell is cNGN `-S` and USDC `+S x P`.
 
 `order_entry_spec` and `ui_intent` are accepted on the two markets that carry the contract —
-`USDCcNGN-SPOT` with `cngn_usdc_spot_v1` and `USDCcNGN-PERP` with `cngn_usdc_perp_v1` — and
+`cNGN-USDC` with `cngn_usdc_spot_v1` and `cNGN-PERP` with `cngn_usdc_perp_v1` — and
 refused everywhere else. The spec must be the market's own: an intent sent with the other market's
 spec, or with a retired `usdc_cngn_*_v1` spec, is rejected with
 `order_entry_spec must be "cngn_usdc_spot_v1" for this market's ui_intent`. Omit both fields to
