@@ -16,7 +16,8 @@ orders are signed for. Nothing about it is shared with spot except the matcher a
 perp margin account is a separate subaccount from a spot account, opened by the first deposit under
 the perp's SRM.
 
-- `market = "USDCcNGN-PERP"` — the stable identifier you pass as `symbol` and `market`
+- `market = "cNGN-PERP"` — the identifier you pass as `symbol` on REST endpoints and `market` on
+  websocket streams
 - `display_name = "cNGN-PERP"`, `display_label = "USDC per cNGN"`
 - `contract_type = "perpetual"`, `settlement_type = "cash_settled_perpetual"`
 - `base_asset_symbol = "cNGN"`, `quote_asset_symbol = "USDC"`
@@ -25,8 +26,11 @@ the perp's SRM.
 - `taker_fee_bps = 25`, `maker_fee_bps = 0`, charged in the perp's cash
 
 <Note>
-  The symbol keeps the legacy `USDCcNGN` spelling. Read `base_asset_symbol` and
-  `quote_asset_symbol` for the orientation rather than parsing the symbol.
+  **Deprecated identifier.** Until 2027-01-06 the old identifier `USDCcNGN-PERP` is accepted as an
+  exact-match alias for `cNGN-PERP` everywhere an identifier is read: `symbol`, `market` and
+  `ticker_id`. A request that uses it returns the same data as one that uses `cNGN-PERP`, names the
+  market `cNGN-PERP` in the body, and carries two response headers: `Deprecation: true` and
+  `X-Canonical-Market: cNGN-PERP`. Switch to `cNGN-PERP` before the removal date.
 </Note>
 
 ## Discover the market

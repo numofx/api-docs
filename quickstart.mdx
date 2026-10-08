@@ -25,7 +25,7 @@ curl "$MARKETS_SERVICE_URL/v1/markets"
 
 For the cNGN-USDC spot market, look for:
 
-- `market = "USDCcNGN-SPOT"`
+- `market = "cNGN-USDC"`
 - `display_name = "cNGN-USDC"`
 - `contract_type = "spot"`
 - `settlement_type = "spot"`
@@ -36,8 +36,8 @@ For the cNGN-USDC spot market, look for:
 Once you have the market symbol or the `(asset_address, sub_id)` pair, fetch the current orderbook and recent prints.
 
 ```bash
-curl "$MARKETS_SERVICE_URL/v1/book?symbol=USDCcNGN-SPOT"
-curl "$MARKETS_SERVICE_URL/v1/trades?symbol=USDCcNGN-SPOT&limit=50"
+curl "$MARKETS_SERVICE_URL/v1/book?symbol=cNGN-USDC"
+curl "$MARKETS_SERVICE_URL/v1/trades?symbol=cNGN-USDC&limit=50"
 ```
 
 `markets-service` is the public read surface for:

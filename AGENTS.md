@@ -18,6 +18,10 @@
 - Use "endpoint" for HTTP routes.
 - Use "websocket stream" for realtime feeds.
 - Use "reference" for API docs and "guide" for task-focused documentation.
+- The market identifiers are `cNGN-USDC` (spot) and `cNGN-PERP` (perp). They are what `market`,
+  `symbol` and `ticker_id` carry, and what every example passes.
+- `USDCcNGN-SPOT` and `USDCcNGN-PERP` are deprecated aliases, removed on 2027-01-06. Never use
+  them in new docs or examples. They appear only in the deprecation notes and the changelog.
 
 ## Style preferences
 

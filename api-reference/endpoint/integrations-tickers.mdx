@@ -5,8 +5,11 @@ openapi: 'GET /v1/integrations/tickers'
 
 Each ticker is in the orientation `GET /v1/markets` advertises: `base_currency` is `cNGN` and
 `target_currency` is `USDC`, so every price is **USDC per cNGN** (about `0.00073`), `base_volume`
-is cNGN and `target_volume` is USDC. The `ticker_id` is still `USDCcNGN-SPOT` — the symbol did not
-change with the orientation; read the two currency fields rather than parsing it.
+is cNGN and `target_volume` is USDC. The `ticker_id` is the market identifier, `cNGN-USDC` or
+`cNGN-PERP`; read the two currency fields for the orientation rather than parsing it. The old
+`USDCcNGN-SPOT` and `USDCcNGN-PERP` are accepted as deprecated aliases for `ticker_id` until
+2027-01-06, answered under the canonical `ticker_id` with `Deprecation: true` and
+`X-Canonical-Market` headers.
 
 Prices are rounded to 10 decimal places the same way the orderbook rounds its top levels: `bid`,
 `last_price`, `high` and `low` round down, `ask` rounds up. Volumes round down, `base_volume` to 6

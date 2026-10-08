@@ -56,7 +56,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Canonical market symbol such as USDCcNGN-SPOT"
+            "description": "Market identifier: cNGN-USDC or cNGN-PERP, as GET /v1/markets lists it. Matched exactly. The pre-rename identifiers USDCcNGN-SPOT and USDCcNGN-PERP are accepted as deprecated aliases until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
           },
           {
             "name": "asset_address",
@@ -72,6 +72,16 @@
         "responses": {
           "200": {
             "description": "Top of book for a market",
+            "headers": {
+              "Deprecation": {
+                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT or USDCcNGN-PERP). Those aliases are removed on 2027-01-06.",
+                "schema": { "type": "string", "enum": ["true"] }
+              },
+              "X-Canonical-Market": {
+                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC or cNGN-PERP.",
+                "schema": { "type": "string" }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -81,10 +91,20 @@
             }
           },
           "400": {
-            "description": "Unknown market",
+            "description": "unknown_market: the request named no listed market. Either the symbol, or the asset_address and sub_id pair, matched nothing (identifiers match exactly; the deprecated USDCcNGN-SPOT and USDCcNGN-PERP still resolve until 2027-01-06), or the request named no market at all. Before 2026-10-08 both cases returned the spot book.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": { "$ref": "#/components/schemas/UnknownMarketResponse" },
+                "examples": {
+                  "unknown": {
+                    "summary": "An identifier the venue does not list",
+                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-USDC", "cNGN-PERP"] }
+                  },
+                  "missing": {
+                    "summary": "Neither symbol nor asset_address given",
+                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-USDC", "cNGN-PERP"] }
+                  }
+                }
               }
             }
           }
@@ -95,7 +115,7 @@
       "get": {
         "tags": ["Markets service"],
         "summary": "List tickers for integrators",
-        "description": "One ticker per enabled market, in the pair orientation GET /v1/markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On USDCcNGN-SPOT and USDCcNGN-PERP that is cNGN priced in USDC, the same orientation as GET /v1/book and GET /v1/trades; nothing is inverted. Prices are USDC per cNGN to 10 decimal places: last_price, high, low and bid round down, ask rounds up, so the ticker agrees with the orderbook's top levels. base_volume is cNGN to 6 decimal places, target_volume USDC to 18, both rounded down. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "description": "One ticker per enabled market, in the pair orientation GET /v1/markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On cNGN-USDC and cNGN-PERP that is cNGN priced in USDC, the same orientation as GET /v1/book and GET /v1/trades; nothing is inverted. Prices are USDC per cNGN to 10 decimal places: last_price, high, low and bid round down, ask rounds up, so the ticker agrees with the orderbook's top levels. base_volume is cNGN to 6 decimal places, target_volume USDC to 18, both rounded down. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
         "operationId": "listIntegrationTickers",
         "responses": {
           "200": {
@@ -116,7 +136,7 @@
       "get": {
         "tags": ["Markets service"],
         "summary": "Get orderbook for integrators",
-        "description": "Resting orders aggregated into price levels in the advertised pair orientation. On USDCcNGN-SPOT and USDCcNGN-PERP, bids are orders buying cNGN and asks are orders selling it, priced in USDC per cNGN with quantities in cNGN. Bid prices round down and ask prices round up to 10 decimal places, and quantities round down to 6, so no level shows a better price or more size than is resting. Orders whose prices round to the same level are summed; a level whose quantity rounds to 0 is dropped. At most the first 1000 resting orders per side are read. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "description": "Resting orders aggregated into price levels in the advertised pair orientation. On cNGN-USDC and cNGN-PERP, bids are orders buying cNGN and asks are orders selling it, priced in USDC per cNGN with quantities in cNGN. Bid prices round down and ask prices round up to 10 decimal places, and quantities round down to 6, so no level shows a better price or more size than is resting. Orders whose prices round to the same level are summed; a level whose quantity rounds to 0 is dropped. At most the first 1000 resting orders per side are read. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
         "operationId": "getIntegrationOrderbook",
         "parameters": [
           {
@@ -124,7 +144,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "A ticker_id from GET /v1/integrations/tickers, such as USDCcNGN-SPOT. The symbol did not change with the cNGN-USDC orientation. An unknown value is rejected rather than answered with another market."
+            "description": "A ticker_id from GET /v1/integrations/tickers: cNGN-USDC or cNGN-PERP, matched exactly. The deprecated USDCcNGN-SPOT and USDCcNGN-PERP are accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers. An unknown value is rejected rather than answered with another market."
           },
           {
             "name": "depth",
@@ -136,6 +156,16 @@
         "responses": {
           "200": {
             "description": "Aggregated levels, best first",
+            "headers": {
+              "Deprecation": {
+                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT or USDCcNGN-PERP). Those aliases are removed on 2027-01-06.",
+                "schema": { "type": "string", "enum": ["true"] }
+              },
+              "X-Canonical-Market": {
+                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC or cNGN-PERP.",
+                "schema": { "type": "string" }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/IntegrationOrderbookResponse" }
@@ -157,7 +187,7 @@
       "get": {
         "tags": ["Markets service"],
         "summary": "List trades for integrators",
-        "description": "Fills newest first, in the advertised pair orientation. On USDCcNGN-SPOT and USDCcNGN-PERP, price is USDC per cNGN to 10 decimal places, base_volume is the cNGN traded to 6 decimal places and target_volume the USDC it traded for to 18, all rounded to nearest. type is the taker's side in cNGN. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "description": "Fills newest first, in the advertised pair orientation. On cNGN-USDC and cNGN-PERP, price is USDC per cNGN to 10 decimal places, base_volume is the cNGN traded to 6 decimal places and target_volume the USDC it traded for to 18, all rounded to nearest. type is the taker's side in cNGN. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
         "operationId": "listIntegrationTrades",
         "parameters": [
           {
@@ -165,7 +195,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "A ticker_id from GET /v1/integrations/tickers, such as USDCcNGN-SPOT."
+            "description": "A ticker_id from GET /v1/integrations/tickers: cNGN-USDC or cNGN-PERP, matched exactly. The deprecated USDCcNGN-SPOT and USDCcNGN-PERP are accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers."
           },
           {
             "name": "limit",
@@ -182,6 +212,16 @@
         "responses": {
           "200": {
             "description": "One page of trades, newest first",
+            "headers": {
+              "Deprecation": {
+                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT or USDCcNGN-PERP). Those aliases are removed on 2027-01-06.",
+                "schema": { "type": "string", "enum": ["true"] }
+              },
+              "X-Canonical-Market": {
+                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC or cNGN-PERP.",
+                "schema": { "type": "string" }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/IntegrationTradesResponse" }
@@ -252,7 +292,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Canonical market symbol such as USDCcNGN-SPOT"
+            "description": "Market identifier: cNGN-USDC or cNGN-PERP, as GET /v1/markets lists it. Matched exactly. The pre-rename identifiers USDCcNGN-SPOT and USDCcNGN-PERP are accepted as deprecated aliases until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
           },
           {
             "name": "asset_address",
@@ -296,6 +336,16 @@
         "responses": {
           "200": {
             "description": "OHLCV buckets, oldest first",
+            "headers": {
+              "Deprecation": {
+                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT or USDCcNGN-PERP). Those aliases are removed on 2027-01-06.",
+                "schema": { "type": "string", "enum": ["true"] }
+              },
+              "X-Canonical-Market": {
+                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC or cNGN-PERP.",
+                "schema": { "type": "string" }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -305,10 +355,20 @@
             }
           },
           "400": {
-            "description": "Unknown market or invalid query parameter",
+            "description": "unknown_market, or an invalid query parameter (those return {\"error\": \"<message>\"} as before). unknown_market: the request named no listed market. Either the symbol, or the asset_address and sub_id pair, matched nothing (identifiers match exactly; the deprecated USDCcNGN-SPOT and USDCcNGN-PERP still resolve until 2027-01-06), or the request named no market at all. Before 2026-10-08 both cases returned the spot book.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": { "$ref": "#/components/schemas/UnknownMarketResponse" },
+                "examples": {
+                  "unknown": {
+                    "summary": "An identifier the venue does not list",
+                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-USDC", "cNGN-PERP"] }
+                  },
+                  "missing": {
+                    "summary": "Neither symbol nor asset_address given",
+                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-USDC", "cNGN-PERP"] }
+                  }
+                }
               }
             }
           }
@@ -324,7 +384,8 @@
           {
             "name": "symbol",
             "in": "query",
-            "schema": { "type": "string" }
+            "schema": { "type": "string" },
+            "description": "Market identifier: cNGN-USDC or cNGN-PERP, as GET /v1/markets lists it. Matched exactly. The pre-rename identifiers USDCcNGN-SPOT and USDCcNGN-PERP are accepted as deprecated aliases until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
           },
           {
             "name": "asset_address",
@@ -350,10 +411,38 @@
         "responses": {
           "200": {
             "description": "Recent trades and 24h stats",
+            "headers": {
+              "Deprecation": {
+                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT or USDCcNGN-PERP). Those aliases are removed on 2027-01-06.",
+                "schema": { "type": "string", "enum": ["true"] }
+              },
+              "X-Canonical-Market": {
+                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC or cNGN-PERP.",
+                "schema": { "type": "string" }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TradesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "unknown_market, or an invalid limit or before_trade_id (those return {\"error\": \"<message>\"} as before). unknown_market: the request named no listed market. Either the symbol, or the asset_address and sub_id pair, matched nothing (identifiers match exactly; the deprecated USDCcNGN-SPOT and USDCcNGN-PERP still resolve until 2027-01-06), or the request named no market at all. Before 2026-10-08 both cases returned the spot book.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UnknownMarketResponse" },
+                "examples": {
+                  "unknown": {
+                    "summary": "An identifier the venue does not list",
+                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-USDC", "cNGN-PERP"] }
+                  },
+                  "missing": {
+                    "summary": "Neither symbol nor asset_address given",
+                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-USDC", "cNGN-PERP"] }
+                  }
                 }
               }
             }
@@ -686,13 +775,13 @@
       "MarketPresentation": {
         "type": "object",
         "properties": {
-          "market": { "type": "string" },
+          "market": { "type": "string", "description": "The market identifier: cNGN-USDC (spot) or cNGN-PERP (perp). Always the canonical identifier, whichever alias the request used. This is the value to pass as symbol, market and ticker_id.", "example": "cNGN-USDC" },
           "contract_type": { "type": "string" },
           "settlement_type": { "type": "string" },
           "base_asset_symbol": { "type": "string", "description": "The asset priced and sized. cNGN on both markets.", "example": "cNGN" },
           "quote_asset_symbol": { "type": "string", "description": "The asset prices are quoted in. USDC on both markets.", "example": "USDC" },
-          "expiry_timestamp": { "type": "integer", "description": "Unix seconds at which the market expires. Omitted for markets that do not expire, including USDCcNGN-SPOT." },
-          "display_name": { "type": "string", "description": "Human-readable pair name: cNGN-USDC for USDCcNGN-SPOT, cNGN-PERP for USDCcNGN-PERP. The market symbol is the stable identifier; this is for display.", "example": "cNGN-USDC" },
+          "expiry_timestamp": { "type": "integer", "description": "Unix seconds at which the market expires. Omitted for markets that do not expire, including cNGN-USDC." },
+          "display_name": { "type": "string", "description": "Human-readable pair name. Since 2026-10-08 it equals the market identifier: cNGN-USDC and cNGN-PERP. Use market as the identifier; this is for display.", "example": "cNGN-USDC" },
           "display_label": { "type": "string", "description": "Unit of every price on the market.", "example": "USDC per cNGN" },
           "tick_size": { "type": "string", "description": "Smallest price increment. Order prices are normalized against it." },
           "min_size": { "type": "string", "description": "Smallest tradable size. Order amounts are normalized against it, and an amount below it normalizes to zero and is rejected.", "example": "0.001" },
@@ -705,7 +794,7 @@
           "display_price_kind": { "type": "string", "enum": ["direct", "vol_percent"], "description": "How a client should render the price. All current markets are direct." },
           "display_semantics": { "type": "string", "enum": ["direct", "vol_percent"], "description": "Interpretation of the displayed price. Mirrors display_price_kind." },
           "last_trade_timestamp": { "type": "integer", "description": "Unix seconds of the most recent fill." },
-          "order_entry_spec": { "type": "string", "description": "Identifies the ui_intent contract the market accepts: cngn_usdc_spot_v1 on USDCcNGN-SPOT, cngn_usdc_perp_v1 on USDCcNGN-PERP. Both are identity mappings: the engine order is the ui_intent. The retired usdc_cngn_* specs are refused.", "example": "cngn_usdc_spot_v1" },
+          "order_entry_spec": { "type": "string", "description": "Identifies the ui_intent contract the market accepts: cngn_usdc_spot_v1 on cNGN-USDC, cngn_usdc_perp_v1 on cNGN-PERP. Both are identity mappings: the engine order is the ui_intent. The retired usdc_cngn_* specs are refused.", "example": "cngn_usdc_spot_v1" },
           "ui_price_unit": { "type": "string", "description": "Unit of ui_intent.price. The same as engine_price_unit.", "example": "USDC per cNGN" },
           "ui_size_unit": { "type": "string", "description": "Unit of ui_intent.size: cNGN amount on spot, cNGN contracts on the perp.", "example": "cNGN amount" },
           "ui_side_meaning": { "type": "string", "description": "What each side does, in cNGN. On spot: BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC. On the perp a BUY is a long of cNGN against USD.", "example": "BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC." },
@@ -719,7 +808,7 @@
           "margin_manager_address": { "type": "string", "description": "The StandardManager (SRM) a trading account for this market is created under." },
           "perp": {
             "allOf": [{ "$ref": "#/components/schemas/PerpMarketState" }],
-            "description": "USDCcNGN-PERP only: the perp's live state read from chain. Omitted on spot."
+            "description": "cNGN-PERP only: the perp's live state read from chain. Omitted on spot."
           }
         }
       },
@@ -806,7 +895,7 @@
         "description": "A perp position in the cNGN-PERP orientation. Decimal fields are strings without trailing zeros.",
         "required": ["market", "subaccount_id", "engine_position", "ui_side", "ui_size", "ui_notional_usdc", "mark_price_ui", "index_price_ui", "unrealized_pnl", "initial_margin_surplus", "maintenance_margin_surplus"],
         "properties": {
-          "market": { "type": "string", "example": "USDCcNGN-PERP" },
+          "market": { "type": "string", "example": "cNGN-PERP" },
           "subaccount_id": { "type": "string", "example": "42" },
           "engine_position": { "type": "string", "description": "The signed cNGN balance of the perp on chain, up to 18 decimal places. Positive is a long.", "example": "137400" },
           "ui_side": { "type": "string", "enum": ["long", "short"], "description": "long when engine_position is positive, short when negative. A long is long cNGN." },
@@ -825,7 +914,7 @@
         "description": "The account's margin on a perp stack, whether or not it holds a position.",
         "required": ["market", "subaccount_id", "cash", "initial_margin_surplus", "maintenance_margin_surplus", "collateral"],
         "properties": {
-          "market": { "type": "string", "example": "USDCcNGN-PERP" },
+          "market": { "type": "string", "example": "cNGN-PERP" },
           "subaccount_id": { "type": "string", "example": "42" },
           "cash": { "type": "string", "description": "Balance in the perp's CashAsset, in USDC, signed, up to 18 decimal places.", "example": "40" },
           "initial_margin_surplus": { "type": "string", "description": "The SRM's initial margin surplus, in USDC. For an account with no position, its cash.", "example": "6.63045" },
@@ -990,7 +1079,7 @@
       },
       "SpotContract": {
         "type": "object",
-        "description": "Present on USDCcNGN-SPOT and USDCcNGN-PERP. Restates the raw engine order at display scales. ui_intent and engine_order are the same order in the same orientation (USDC per cNGN, sized in cNGN); ui_intent prints the price to 10 decimal places and the size to 6, engine_order carries the engine's 18.",
+        "description": "Present on cNGN-USDC and cNGN-PERP. Restates the raw engine order at display scales. ui_intent and engine_order are the same order in the same orientation (USDC per cNGN, sized in cNGN); ui_intent prints the price to 10 decimal places and the size to 6, engine_order carries the engine's 18.",
         "properties": {
           "spec": { "type": "string", "description": "The market's order_entry_spec.", "example": "cngn_usdc_spot_v1" },
           "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
@@ -1043,9 +1132,9 @@
           "limit_price": { "type": "string" },
           "worst_fee": { "type": "string" },
           "expiry": { "type": "integer" },
-          "order_entry_spec": { "type": "string", "description": "USDCcNGN-SPOT and USDCcNGN-PERP only — sending it on an order for any other market is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be the market's own spec — cngn_usdc_spot_v1 on spot, cngn_usdc_perp_v1 on the perp — and ui_intent becomes required. The retired usdc_cngn_spot_v1 and usdc_cngn_perp_v1 specs, and the other market's spec, are refused.", "example": "cngn_usdc_spot_v1" },
+          "order_entry_spec": { "type": "string", "description": "cNGN-USDC and cNGN-PERP only — sending it on an order for any other market is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be the market's own spec — cngn_usdc_spot_v1 on spot, cngn_usdc_perp_v1 on the perp — and ui_intent becomes required. The retired usdc_cngn_spot_v1 and usdc_cngn_perp_v1 specs, and the other market's spec, are refused.", "example": "cngn_usdc_spot_v1" },
           "ui_intent": {
-            "description": "USDCcNGN-SPOT and USDCcNGN-PERP only — sending it on an order for any other market is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it as the identity: side = ui_intent.side, limit_price = ui_intent.price (USDC per cNGN), desired_amount = ui_intent.size (cNGN). If you send those fields as well, each must equal its ui_intent counterpart or the order is rejected.",
+            "description": "cNGN-USDC and cNGN-PERP only — sending it on an order for any other market is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it as the identity: side = ui_intent.side, limit_price = ui_intent.price (USDC per cNGN), desired_amount = ui_intent.size (cNGN). If you send those fields as well, each must equal its ui_intent counterpart or the order is rejected.",
             "allOf": [{ "$ref": "#/components/schemas/SpotUIIntent" }]
           },
           "action_json": {},
@@ -1232,9 +1321,9 @@
         "description": "A market in its advertised orientation: cNGN priced in USDC. Price fields are null, never omitted, when there is no value: no fill yet, no resting bid or ask, or nothing traded in the last 24 hours.",
         "required": ["ticker_id", "base_currency", "target_currency", "last_price", "base_volume", "target_volume", "bid", "ask", "high", "low"],
         "properties": {
-          "ticker_id": { "type": "string", "description": "Market symbol, such as USDCcNGN-SPOT. Pass it as ticker_id to the orderbook and trades endpoints. The symbol names the pair in the legacy order; base_currency and target_currency are authoritative." },
-          "base_currency": { "type": "string", "description": "The asset priced. cNGN on USDCcNGN-SPOT and USDCcNGN-PERP.", "example": "cNGN" },
-          "target_currency": { "type": "string", "description": "The asset prices are quoted in. USDC on USDCcNGN-SPOT and USDCcNGN-PERP.", "example": "USDC" },
+          "ticker_id": { "type": "string", "description": "The market identifier, cNGN-USDC or cNGN-PERP. Pass it as ticker_id to the orderbook and trades endpoints. base_currency and target_currency state the orientation.", "example": "cNGN-USDC" },
+          "base_currency": { "type": "string", "description": "The asset priced. cNGN on cNGN-USDC and cNGN-PERP.", "example": "cNGN" },
+          "target_currency": { "type": "string", "description": "The asset prices are quoted in. USDC on cNGN-USDC and cNGN-PERP.", "example": "USDC" },
           "last_price": { "type": ["string", "null"], "description": "Price of the most recent fill, at any age, in target_currency per base_currency (USDC per cNGN), rounded down to 10 decimal places.", "example": "0.0007278" },
           "base_volume": { "type": "string", "description": "Base asset (cNGN) traded over the trailing 24 hours, rounded down to 6 decimal places. 0 when nothing traded." },
           "target_volume": { "type": "string", "description": "Target asset (USDC) traded over the trailing 24 hours, rounded down to 18 decimal places. 0 when nothing traded." },
@@ -1300,6 +1389,16 @@
         "type": "object",
         "properties": {
           "error": { "type": "string" }
+        }
+      },
+      "UnknownMarketResponse": {
+        "type": "object",
+        "description": "The 400 from GET /v1/book, GET /v1/trades and GET /v1/candles when the request names no listed market.",
+        "required": ["error", "message", "markets"],
+        "properties": {
+          "error": { "type": "string", "enum": ["unknown_market"] },
+          "message": { "type": "string", "description": "no such market: <identifier> when the symbol or asset_address + sub_id matched nothing; symbol or asset_address is required when the request named no market.", "example": "no such market: NOPE" },
+          "markets": { "type": "array", "items": { "type": "string" }, "description": "The canonical identifiers the venue accepts, in listing order. Deprecated aliases are accepted but not listed.", "example": ["cNGN-USDC", "cNGN-PERP"] }
         }
       }
     }

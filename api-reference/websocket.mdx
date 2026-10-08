@@ -67,7 +67,7 @@ Send these as JSON text frames. The `op` field selects the operation.
 ### Subscribe
 
 ```json
-{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SPOT" }
+{ "op": "subscribe", "channel": "book", "market": "cNGN-USDC" }
 ```
 
 <ParamField body="op" type="string" required>
@@ -79,9 +79,12 @@ Send these as JSON text frames. The `op` field selects the operation.
 </ParamField>
 
 <ParamField body="market" type="string">
-  Canonical market symbol such as `USDCcNGN-SPOT`, or an `asset_address:sub_id` pair.
+  Market identifier such as `cNGN-USDC`, or an `asset_address:sub_id` pair.
   Required for `book` and `trades`. Optional for `orders`, where it scopes the stream to a
-  single market.
+  single market. The deprecated `USDCcNGN-SPOT` and `USDCcNGN-PERP` are accepted until
+  2027-01-06; whichever identifier you subscribe with, every frame names the market by its
+  canonical identifier, and an `unsubscribe` with any identifier for the market ends the
+  subscription.
 </ParamField>
 
 <ParamField body="since_seq" type="integer">
@@ -95,7 +98,7 @@ Subscriptions are idempotent — subscribing again to the same `(channel, market
 ### Unsubscribe
 
 ```json
-{ "op": "unsubscribe", "channel": "book", "market": "USDCcNGN-SPOT" }
+{ "op": "unsubscribe", "channel": "book", "market": "cNGN-USDC" }
 ```
 
 The server replies with an `ack` frame.
@@ -144,7 +147,7 @@ Frame shape:
 {
   "type": "update",
   "channel": "book",
-  "market": "USDCcNGN-SPOT",
+  "market": "cNGN-USDC",
   "seq": 10441,
   "data": { "…": "…" }
 }
@@ -219,7 +222,7 @@ Track the highest `seq` you have applied per `(channel, market)`. On reconnect, 
 `since_seq` set to that value:
 
 ```json
-{ "op": "subscribe", "channel": "book", "market": "USDCcNGN-SPOT", "since_seq": 10441 }
+{ "op": "subscribe", "channel": "book", "market": "cNGN-USDC", "since_seq": 10441 }
 ```
 
 - If the events after `since_seq` are still retained, the server replays them and goes live —
