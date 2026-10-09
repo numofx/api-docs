@@ -124,3 +124,18 @@ The matching loop in `markets-service` identifies crossed orders and emits a pay
     Review the public orderbook, trades, and order-entry surface.
   </Card>
 </CardGroup>
+
+## Fund a perp account
+
+To trade `cNGN-PERP` you need a perp margin account holding USDC. Approve the `DepositModule` for your USDC once,
+on chain, then sign one `Action` and post it to [`POST /v1/deposits`](/api-reference/endpoint/deposits) with
+`subaccount_id` `0`. The venue opens the account, funds it and pays the gas, and the response's `subaccount_id` is
+your new account — the `subaccount_id` you put on your orders.
+
+The amount is USDC in **6-decimal base units** (`1000000000` is 1,000 USDC); your account's cash is credited at 18
+decimals, and the response gives both.
+
+<Warning>
+  `POST /v1/deposits` is not enabled yet and answers 503. Until it is, open the account on chain with
+  `createAndDepositSubAccount`; see the [perp guide](/perp).
+</Warning>

@@ -659,6 +659,56 @@
         }
       }
     },
+    "/v1/deposits": {
+      "post": {
+        "tags": ["Markets service"],
+        "summary": "Create a deposit",
+        "operationId": "createDeposit",
+        "description": "Opens a perp margin account (subaccount_id 0) and funds it, or tops one up, with one signed DepositModule action. The venue verifies the action, reads the nonce, ownership and the owner's USDC balance and allowance from the chain, simulates, and submits it through Matching.verifyAndMatch, paying the gas. Not enabled yet: answers 503 until deposits are switched on.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DepositRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted. receipt_status timeout means broadcast but not yet confirmed; resubmit the same request for the outcome.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DepositReceipt" }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed or off-policy request, or a chain pre-check failed: a spent nonce, not your account, not a perp account, or too little USDC balance or allowance. error says what to do; revert names the on-chain revert when there was one.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WithdrawalRejection" } } }
+          },
+          "401": {
+            "description": "The signature does not authorize the action",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "422": {
+            "description": "The simulation reverted for a reason not listed under 400, and revert names it",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WithdrawalRejection" } } }
+          },
+          "429": {
+            "description": "A deposit for this owner is in progress, or more than three were requested in a minute",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "502": {
+            "description": "Could not confirm whether the deposit was submitted",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "503": {
+            "description": "Deposits are not enabled, or the hourly budget of sponsored deposits is spent",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
     "/v1/orders/{order_id}": {
       "get": {
         "tags": ["Markets service"],
@@ -1283,6 +1333,41 @@
           "tx_hash": { "type": "string" },
           "receipt_status": { "type": "string", "enum": ["success", "reverted", "timeout"], "description": "timeout: broadcast, not yet confirmed." },
           "block_number": { "type": "string" }
+        }
+      },
+      "DepositRequest": {
+        "type": "object",
+        "required": ["action", "signature"],
+        "properties": {
+          "action": {
+            "type": "object",
+            "description": "A Matching Action for the DepositModule, signed with EIP-712 against the Matching domain.",
+            "required": ["subaccount_id", "nonce", "module", "data", "expiry", "owner", "signer"],
+            "properties": {
+              "subaccount_id": { "type": "string", "description": "Base-10. 0 opens a new perp account; otherwise your perp account to top up." },
+              "nonce": { "type": "string", "description": "Base-10 uint256, unused by this owner in the DepositModule." },
+              "module": { "type": "string", "description": "The DepositModule address." },
+              "data": { "type": "string", "description": "abi.encode(uint256 amount, address asset, address managerForNewAccount). amount is USDC in 6-decimal base units (1000000000 = 1,000 USDC), explicit and at least 10 USDC; asset is the perp cash asset; managerForNewAccount is the perp risk manager, or zero for a top-up." },
+              "expiry": { "type": "string", "description": "Unix seconds; in the future and at most one hour ahead." },
+              "owner": { "type": "string", "description": "Your address: the USDC is pulled from here, and you own the account." },
+              "signer": { "type": "string", "description": "Must equal owner." }
+            }
+          },
+          "signature": { "type": "string", "description": "EIP-712 signature by signer: 65 bytes, or longer for an ERC-1271 wallet." }
+        }
+      },
+      "DepositReceipt": {
+        "type": "object",
+        "required": ["accepted", "tx_hash", "amount_usdc", "amount_units", "credited_cash_e18"],
+        "properties": {
+          "accepted": { "type": "boolean", "description": "True once mined successfully." },
+          "tx_hash": { "type": "string" },
+          "receipt_status": { "type": "string", "enum": ["success", "reverted", "timeout"], "description": "timeout: broadcast, not yet confirmed." },
+          "block_number": { "type": "string" },
+          "subaccount_id": { "type": "string", "description": "The account credited: your new account when subaccount_id was 0. Absent until the receipt is known." },
+          "amount_usdc": { "type": "string", "description": "The deposit in USDC, with 6 decimal places." },
+          "amount_units": { "type": "string", "description": "The same amount in 6-decimal USDC base units, as signed." },
+          "credited_cash_e18": { "type": "string", "description": "What the account's cash rises by, at the ledger's 18 decimals." }
         }
       },
       "WithdrawalRejection": {

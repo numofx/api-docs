@@ -1,0 +1,111 @@
+---
+title: 'Create a deposit'
+openapi: 'POST /v1/deposits'
+---
+
+Opens a perp margin account and funds it, or tops up one you already have, with one signed `Action` for the
+`DepositModule`. The venue verifies it and submits it through `Matching.verifyAndMatch`, paying the gas; the module
+pulls your USDC, deposits it into the perp's cash, and Matching records you as the account's owner.
+
+<Warning>
+  **Not enabled yet.** This endpoint answers **503** until deposits are switched on. Until then, open a perp account
+  on chain with `createAndDepositSubAccount`; see the [perp guide](/perp).
+</Warning>
+
+<Note>
+  You approve USDC to the `DepositModule` once, on chain. After that every deposit is this endpoint, and costs you no
+  gas.
+</Note>
+
+## Before your first deposit
+
+Approve the `DepositModule` to move at least the amount you will deposit, from the wallet that will own the account:
+
+```text
+USDC.approve(0x6540f8d9Eb599b045C05E45cb6a5B1730a806658, amount)
+```
+
+USDC on Base is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
+
+## Signing the action
+
+Sign an [`Action`](/signing) against the same `Matching` domain as an order, with:
+
+| Field | Value |
+| --- | --- |
+| `subaccountId` | `0` to open a new perp account; your perp account's id to top it up |
+| `nonce` | any unused `uint256`; nonces are per owner and per module |
+| `module` | the DepositModule: `0x6540f8d9Eb599b045C05E45cb6a5B1730a806658` on Base |
+| `data` | `abi.encode(uint256 amount, address asset, address managerForNewAccount)` |
+| `expiry` | unix seconds, in the future and at most one hour ahead |
+| `owner` | your address; the USDC is pulled from here, and you own the account |
+| `signer` | the same as `owner` (session keys are not supported for deposits) |
+
+In `data`:
+
+* `amount` is **USDC in 6-decimal base units**: `1000000000` is 1,000 USDC. It must be explicit — the "whole
+  balance" sentinel `type(uint256).max` is refused — and at least the venue's minimum (10 USDC).
+* `asset` is the perp's cash asset, `0xA74E49b4Ed7cb176bc02ef4D8a1A3240C9aD4272` — the `quote_asset_address` that
+  `GET /v1/markets` reports for `cNGN-PERP`. No other asset is accepted.
+* `managerForNewAccount` is the perp risk manager, `0xDE0423D0a1E15536265C9513d2e0c10DAb5835D4`. For a top-up it is
+  ignored; send the same address or zero.
+
+Your account's cash is credited at 18 decimals, so 1,000 USDC appears on chain as `1000000000000000000000`. The
+response states the amount in all three forms.
+
+Send the action's seven fields as strings (numbers in base 10, `data` as hex) with the signature:
+
+```json
+{
+  "action": {
+    "subaccount_id": "0",
+    "nonce": "7",
+    "module": "0x6540f8d9Eb599b045C05E45cb6a5B1730a806658",
+    "data": "0x000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000a74e49b4ed7cb176bc02ef4d8a1a3240c9ad4272000000000000000000000000de0423d0a1e15536265c9513d2e0c10dab5835d4",
+    "expiry": "1789400600",
+    "owner": "0xYourAddress",
+    "signer": "0xYourAddress"
+  },
+  "signature": "0x…"
+}
+```
+
+## What is checked
+
+In order, and every check fails closed:
+
+1. The request: module, signer equals owner, expiry, `data` exactly three words, the perp cash asset, an explicit
+   amount at or above the minimum, and the perp risk manager for a new account. Refused with **400**.
+2. At most one deposit in progress per owner, and three a minute. Refused with **429**.
+3. The signature authorizes the action. Refused with **401**.
+4. Read from the chain before anything is submitted, each refused with **400** and what to do: the nonce is unused;
+   for a top-up, you own the account and it is a perp account; your wallet holds the USDC and has approved the
+   `DepositModule` for it.
+5. The executor's simulation. The reverts above, if they still happen (a race), come back as **400** with `revert`
+   naming them; any other revert is **422**.
+
+**503** means deposits are off, or the venue's hourly budget of sponsored deposits is spent; retry later.
+
+## The outcome
+
+A **200** carries the transaction and what it credited:
+
+```json
+{
+  "accepted": true,
+  "tx_hash": "0x…",
+  "receipt_status": "success",
+  "block_number": "52386004",
+  "subaccount_id": "27",
+  "amount_usdc": "1000.000000",
+  "amount_units": "1000000000",
+  "credited_cash_e18": "1000000000000000000000"
+}
+```
+
+`subaccount_id` is your new account when you sent `0`. Use it as `subaccount_id` on your orders. It is absent when
+`receipt_status` is `timeout`: the transaction was broadcast and had not confirmed. Resubmit the same signed
+request to get the outcome — the venue answers it from the first submission and never sends it twice.
+
+A **502** means the venue could not confirm whether the deposit was submitted. Resubmit the *same* signed request,
+or check your account, before signing a new one: a second signed deposit is a second deposit.
