@@ -1375,7 +1375,17 @@
               "signer": { "type": "string", "description": "Must equal owner." }
             }
           },
-          "signature": { "type": "string", "description": "EIP-712 signature by signer: 65 bytes, or longer for an ERC-1271 wallet." }
+          "signature": { "type": "string", "description": "EIP-712 signature by signer: 65 bytes, or longer for an ERC-1271 wallet." },
+          "permit": {
+            "type": "object",
+            "description": "Optional EIP-2612 permit on Base USDC from owner to the DepositModule, instead of a prior approve. The venue submits it with the DepositModule as spender, and skips it when the allowance already covers the deposit.",
+            "required": ["value", "deadline", "signature"],
+            "properties": {
+              "value": { "type": "string", "description": "Base-10, 6-decimal USDC base units; at least the deposit amount." },
+              "deadline": { "type": "string", "description": "Unix seconds; not yet passed." },
+              "signature": { "type": "string", "description": "65-byte EIP-712 signature over USDC's Permit, by owner." }
+            }
+          }
         }
       },
       "DepositReceipt": {
@@ -1391,7 +1401,8 @@
           "subaccount_id": { "type": "string", "description": "The account credited: your new account when subaccount_id was 0. Absent until the receipt is known." },
           "amount_usdc": { "type": "string", "description": "The deposit in USDC, with 6 decimal places." },
           "amount_units": { "type": "string", "description": "The same amount in 6-decimal USDC base units, as signed." },
-          "credited_cash_e18": { "type": "string", "description": "What the account's cash rises by, at the ledger's 18 decimals." }
+          "credited_cash_e18": { "type": "string", "description": "What the account's cash rises by, at the ledger's 18 decimals." },
+          "permit_tx_hash": { "type": "string", "description": "The permit's transaction, when the deposit carried a permit and it was needed." }
         }
       },
       "DepositRecord": {
