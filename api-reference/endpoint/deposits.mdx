@@ -84,7 +84,9 @@ In order, and every check fails closed:
 
 1. The request: module, signer equals owner, expiry, `data` exactly three words, the perp cash asset, an explicit
    amount at or above the minimum, and the perp risk manager for a new account. Refused with **400**.
-2. At most one deposit in progress per owner, and three a minute. Refused with **429**.
+2. At most one deposit in progress per owner, three requests a minute, and six submitted deposits an hour. Refused
+   with **429**; the hourly limit sends `Retry-After`. A request refused for any other reason does not count toward
+   the hour.
 3. The signature authorizes the action. Refused with **401**.
 4. Read from the chain before anything is submitted, each refused with **400** and what to do: the nonce is unused;
    for a top-up, you own the account and it is a perp account; your wallet holds the USDC and has approved the
@@ -92,7 +94,8 @@ In order, and every check fails closed:
 5. The executor's simulation. The reverts above, if they still happen (a race), come back as **400** with `revert`
    naming them; any other revert is **422**.
 
-**503** means deposits are off, or the venue's hourly budget of sponsored deposits is spent; retry later.
+**503** means deposits are off or paused: the venue's gas wallet is below its reserve, or the hour's budget of
+sponsored gas is spent. `error` says which; retry later.
 
 ## The outcome
 
@@ -100,6 +103,8 @@ A **200** carries the transaction and what it credited:
 
 ```json
 {
+  "action_hash": "0x1a818d05…",
+  "status": "confirmed",
   "accepted": true,
   "tx_hash": "0x…",
   "receipt_status": "success",
@@ -111,9 +116,30 @@ A **200** carries the transaction and what it credited:
 }
 ```
 
-`subaccount_id` is your new account when you sent `0`. Use it as `subaccount_id` on your orders. It is absent when
-`receipt_status` is `timeout`: the transaction was broadcast and had not confirmed. Resubmit the same signed
-request to get the outcome — the venue answers it from the first submission and never sends it twice.
+`subaccount_id` is your new account when you sent `0`. Use it as `subaccount_id` on your orders.
 
-A **502** means the venue could not confirm whether the deposit was submitted. Resubmit the *same* signed request,
-or check your account, before signing a new one: a second signed deposit is a second deposit.
+`action_hash` identifies the deposit: it is the EIP-712 hash of your signed action (`Matching.getActionHash`).
+`status` is one of:
+
+| `status` | Meaning |
+| --- | --- |
+| `pending` | Being checked and submitted. Answered with **202**. |
+| `submitted` | Broadcast, but the receipt was not known yet (`receipt_status: "timeout"`). |
+| `confirmed` | Mined successfully. |
+| `reverted` | Mined and reverted. |
+| `rejected` | Refused before anything was sent. You may resubmit the same request. |
+| `unknown` | The venue could not confirm whether it was submitted. |
+
+## Checking a deposit later
+
+```text
+GET /v1/deposits/{action_hash}
+```
+
+Returns the deposit's record. A `submitted` deposit is re-read from the chain first, so a receipt that timed out
+resolves to `confirmed` (with `subaccount_id`) or `reverted` on the next read.
+
+Sending the **same signed request** again is also safe at any point: the venue answers it from its record and
+never submits it twice — after a timeout, a dropped connection or a restart. A **502** means the venue could not
+confirm whether the deposit was submitted: look it up by `action_hash`, or resend the same request, before signing a
+new one. A second signed deposit is a second deposit.

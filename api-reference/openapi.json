@@ -694,8 +694,12 @@
             "description": "The simulation reverted for a reason not listed under 400, and revert names it",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WithdrawalRejection" } } }
           },
+          "202": {
+            "description": "The same signed deposit is already being submitted; status is pending. Read it later with GET /v1/deposits/{action_hash}.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepositRecord" } } }
+          },
           "429": {
-            "description": "A deposit for this owner is in progress, or more than three were requested in a minute",
+            "description": "A deposit for this owner is in progress, more than three were requested in a minute, or six were submitted in the last hour (Retry-After)",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
           },
           "502": {
@@ -703,9 +707,27 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
           },
           "503": {
-            "description": "Deposits are not enabled, or the hourly budget of sponsored deposits is spent",
+            "description": "Deposits are not enabled, or paused: the venue's gas wallet is below its reserve, or the hour's sponsored gas budget is spent",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
           }
+        }
+      }
+    },
+    "/v1/deposits/{action_hash}": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "Get a deposit",
+        "operationId": "getDeposit",
+        "description": "A deposit's record by the EIP-712 hash of its signed action (Matching.getActionHash). A submitted deposit is re-read from the chain first, so a receipt that timed out resolves on the next read.",
+        "parameters": [
+          { "name": "action_hash", "in": "path", "required": true, "schema": { "type": "string" }, "description": "0x followed by 64 hex digits." }
+        ],
+        "responses": {
+          "200": { "description": "The deposit", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepositRecord" } } } },
+          "202": { "description": "Still pending", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepositRecord" } } } },
+          "400": { "description": "Malformed action_hash", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "No deposit with this action_hash", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "503": { "description": "Deposits are not enabled, or the record could not be read", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
         }
       }
     },
@@ -1360,6 +1382,8 @@
         "type": "object",
         "required": ["accepted", "tx_hash", "amount_usdc", "amount_units", "credited_cash_e18"],
         "properties": {
+          "action_hash": { "type": "string", "description": "EIP-712 hash of the signed action (Matching.getActionHash); the key for GET /v1/deposits/{action_hash}." },
+          "status": { "type": "string", "enum": ["pending", "submitted", "confirmed", "reverted", "rejected", "unknown"] },
           "accepted": { "type": "boolean", "description": "True once mined successfully." },
           "tx_hash": { "type": "string" },
           "receipt_status": { "type": "string", "enum": ["success", "reverted", "timeout"], "description": "timeout: broadcast, not yet confirmed." },
@@ -1368,6 +1392,27 @@
           "amount_usdc": { "type": "string", "description": "The deposit in USDC, with 6 decimal places." },
           "amount_units": { "type": "string", "description": "The same amount in 6-decimal USDC base units, as signed." },
           "credited_cash_e18": { "type": "string", "description": "What the account's cash rises by, at the ledger's 18 decimals." }
+        }
+      },
+      "DepositRecord": {
+        "type": "object",
+        "required": ["action_hash", "status", "owner", "amount_usdc", "amount_units", "credited_cash_e18"],
+        "properties": {
+          "action_hash": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "submitted", "confirmed", "reverted", "rejected", "unknown"], "description": "rejected: refused before anything was sent; the same request may be resubmitted." },
+          "owner": { "type": "string" },
+          "nonce": { "type": "string" },
+          "subaccount_id_requested": { "type": "string", "description": "0 for a new account." },
+          "subaccount_id": { "type": "string", "description": "The account credited, once known." },
+          "tx_hash": { "type": "string" },
+          "block_number": { "type": "string" },
+          "amount_usdc": { "type": "string" },
+          "amount_units": { "type": "string" },
+          "credited_cash_e18": { "type": "string" },
+          "error": { "type": "string" },
+          "revert": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
         }
       },
       "WithdrawalRejection": {
