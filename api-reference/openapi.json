@@ -1416,6 +1416,7 @@
           "subaccount_id_requested": { "type": "string", "description": "0 for a new account." },
           "subaccount_id": { "type": "string", "description": "The account credited, once known." },
           "tx_hash": { "type": "string" },
+          "permit_tx_hash": { "type": "string", "description": "The permit's transaction, when the deposit carried a permit and it was needed." },
           "block_number": { "type": "string" },
           "amount_usdc": { "type": "string" },
           "amount_units": { "type": "string" },
