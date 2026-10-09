@@ -17,6 +17,14 @@ pulls your USDC, deposits it into the perp's cash, and Matching records you as t
   gas.
 </Note>
 
+<Warning>
+  **Wallets with an EIP-7702 delegation cannot sign for Matching with a plain signature.** Matching verifies
+  signatures with OpenZeppelin's `SignatureChecker`, which treats any address that has code — including an EOA with
+  a 7702 delegation — as a contract wallet and asks it via ERC-1271 instead of recovering the signature. The deposit
+  is refused with `OV_InvalidSignature` unless the delegate contract implements `isValidSignature`. Use an
+  undelegated EOA, or a wallet that supports ERC-1271. The same applies to orders and withdrawals.
+</Warning>
+
 ## Before your first deposit
 
 Approve the `DepositModule` to move at least the amount you will deposit, from the wallet that will own the account:
