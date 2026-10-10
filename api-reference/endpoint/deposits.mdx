@@ -7,14 +7,9 @@ Opens a perp margin account and funds it, or tops up one you already have, with 
 `DepositModule`. The venue verifies it and submits it through `Matching.verifyAndMatch`, paying the gas; the module
 pulls your USDC, deposits it into the perp's cash, and Matching records you as the account's owner.
 
-<Warning>
-  **Not enabled yet.** This endpoint answers **503** until deposits are switched on. Until then, open a perp account
-  on chain with `createAndDepositSubAccount`; see the [perp guide](/perp).
-</Warning>
-
 <Note>
-  You approve USDC to the `DepositModule` once, on chain. After that every deposit is this endpoint, and costs you no
-  gas.
+  Either approve USDC to the `DepositModule` once, on chain, or [sign a permit](#or-sign-a-permit-instead) with the
+  deposit and never send a transaction yourself. Either way every deposit is this endpoint, and the venue pays its gas.
 </Note>
 
 <Warning>
