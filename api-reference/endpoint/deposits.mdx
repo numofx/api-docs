@@ -7,14 +7,9 @@ Opens a perp margin account and funds it, or tops up one you already have, with 
 `DepositModule`. The venue verifies it and submits it through `Matching.verifyAndMatch`, paying the gas; the module
 pulls your USDC, deposits it into the perp's cash, and Matching records you as the account's owner.
 
-<Warning>
-  **Not enabled yet.** This endpoint answers **503** until deposits are switched on. Until then, open a perp account
-  on chain with `createAndDepositSubAccount`; see the [perp guide](/perp).
-</Warning>
-
 <Note>
-  You approve USDC to the `DepositModule` once, on chain. After that every deposit is this endpoint, and costs you no
-  gas.
+  Either approve USDC to the `DepositModule` once, on chain, or [sign a permit](#or-sign-a-permit-instead) with the
+  deposit and never send a transaction yourself. Either way every deposit is this endpoint, and the venue pays its gas.
 </Note>
 
 <Warning>
@@ -34,6 +29,20 @@ USDC.approve(0x6540f8d9Eb599b045C05E45cb6a5B1730a806658, amount)
 ```
 
 USDC on Base is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
+
+### Or sign a permit instead
+
+USDC on Base supports EIP-2612 permits, so you can skip the on-chain approve entirely: sign a `Permit` with USDC's
+domain (`name` `USD Coin`, `version` `2`, chain `8453`) for `spender` = the `DepositModule`, a `value` of at least the
+deposit amount, and your current USDC `nonce`. Send it alongside the action:
+
+```json
+"permit": { "value": "1000000000", "deadline": "1789400600", "signature": "0x…" }
+```
+
+The venue submits the permit, then the deposit, and pays the gas for both. If your allowance already covers the
+deposit — you approved earlier, or someone else submitted your permit first — the permit is skipped, not failed. A
+permit USDC refuses (expired, already used, or signed for another spender) comes back as a **400**.
 
 ## Signing the action
 
@@ -115,6 +124,8 @@ A **200** carries the transaction and what it credited:
   "credited_cash_e18": "1000000000000000000000"
 }
 ```
+
+With a permit that was needed, the response also carries `permit_tx_hash`.
 
 `subaccount_id` is your new account when you sent `0`. Use it as `subaccount_id` on your orders.
 
