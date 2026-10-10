@@ -10,11 +10,12 @@ perp, so a positive position on chain is a long. Read this before integrating ag
 
 ## What the market is
 
-The perp runs on its own stack on Base: a CashAsset over real USDC that PnL and funding settle in,
-its own StandardManager (SRM) that holds margin and liquidates, and its own TradeModule that
-orders are signed for. Nothing about it is shared with spot except the matcher and this API, so a
-perp margin account is a separate subaccount from a spot account, opened by the first deposit under
-the perp's SRM.
+The perp runs on Base under a CashAsset over real USDC that PnL and funding settle in, a
+StandardManager (SRM) that holds margin and liquidates, and a TradeModule that orders are signed
+for. Since 2026-10-04 spot trades on the same stack: both markets sign for the same
+`trade_module_address`, and a wallet has **one trading account** under the SRM for both. Spot
+fills and perp margin share that account's balances, so cNGN bought on spot counts as perp margin
+at its factor. The account is opened by the first deposit under the SRM.
 
 - `market = "cNGN-PERP"` — the identifier you pass as `symbol` on REST endpoints and `market` on
   websocket streams
@@ -47,7 +48,7 @@ object read from chain:
 | --- | --- |
 | `trade_module_address` | The TradeModule a perp order's `action_json.module` must name. A spot module is refused. |
 | `quote_asset_address` | The perp's CashAsset: the USDC escrow you deposit margin into and that PnL settles in. |
-| `margin_manager_address` | The perp's SRM: the manager a perp margin account is created under. |
+| `margin_manager_address` | The SRM: the manager the trading account, for spot and the perp alike, is created under. |
 
 The `perp` object is cached for 10 seconds, except `paused`, which is re-read on every request:
 

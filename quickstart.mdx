@@ -54,7 +54,7 @@ Orders are posted to `markets-service`, but the request must already contain a s
 <Warning>
   `worst_fee` is the most a fill may charge you **per unit filled**, and it must cover the
   market's `taker_fee_bps` from `GET /v1/markets`. The value below is 30 bps of the example price
-  (`1605 x 0.0030`), scaled to 1e18.
+  (`0.00073 x 0.0030`), scaled to 1e18.
 
   Do not copy `0` from an older example. The fee is paid by whichever order arrived **later**, so
   resting on the book does not exempt you — see
@@ -66,18 +66,18 @@ Orders are posted to `markets-service`, but the request must already contain a s
 curl -X POST "$MARKETS_SERVICE_URL/v1/orders" \
   -H "Content-Type: application/json" \
   -d '{
-    "order_id": "future-order-1",
+    "order_id": "spot-order-1",
     "owner_address": "0xOWNER",
     "signer_address": "0xSIGNER",
     "subaccount_id": "10",
     "recipient_id": "10",
     "nonce": "1",
     "side": "buy",
-    "asset_address": "0xDd9c2Ddf97a2Dc9B9d348DcD0ef776aF5291A1F9",
-    "sub_id": "1789567201",
-    "desired_amount": "0.1",
-    "limit_price": "1605",
-    "worst_fee": "4815000000000000000",
+    "asset_address": "0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98",
+    "sub_id": "0",
+    "desired_amount": "1000",
+    "limit_price": "0.00073",
+    "worst_fee": "2190000000000",
     "expiry": 1893456000,
     "action_json": {
       "subaccount_id": "10",
