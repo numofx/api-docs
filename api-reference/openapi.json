@@ -664,7 +664,7 @@
         "tags": ["Markets service"],
         "summary": "Create a deposit",
         "operationId": "createDeposit",
-        "description": "Opens a perp margin account (subaccount_id 0) and funds it, or tops one up, with one signed DepositModule action. The venue verifies the action, reads the nonce, ownership and the owner's USDC balance and allowance from the chain, simulates, and submits it through Matching.verifyAndMatch, paying the gas. Not enabled yet: answers 503 until deposits are switched on.",
+        "description": "Opens a perp margin account (subaccount_id 0) and funds it, or tops one up, with one signed DepositModule action. The venue verifies the action, reads the nonce, ownership and the owner's USDC balance and allowance from the chain, simulates, and submits it through Matching.verifyAndMatch, paying the gas.",
         "requestBody": {
           "required": true,
           "content": {
