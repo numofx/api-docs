@@ -62,7 +62,10 @@ In order, and every check fails closed — a signature or owner that cannot be r
 2. At most one withdrawal in progress per owner, and five a minute. Refused with **429**.
 3. The signature authorizes the action. Refused with **401**.
 4. Matching holds the subaccount (**400**) and records `owner` as its owner (**403**).
-5. The executor's simulation. A withdrawal that would revert is refused with **422**, and `revert` names the
+5. The token's issuer: if USDC or cNGN has frozen your wallet, it cannot receive the token and the withdrawal is
+   refused with **400** saying so. If the issuer has paused the token or frozen the venue's custody contract,
+   withdrawals of that token are suspended for everyone: **503**.
+6. The executor's simulation. A withdrawal that would revert is refused with **422**, and `revert` names the
    revert — for example `WERC_CannotBeNegative` for more than the account holds.
 
 ## The outcome

@@ -664,7 +664,7 @@
         "tags": ["Markets service"],
         "summary": "Create a deposit",
         "operationId": "createDeposit",
-        "description": "Opens a perp margin account (subaccount_id 0) and funds it, or tops one up, with one signed DepositModule action. The venue verifies the action, reads the nonce, ownership and the owner's USDC balance and allowance from the chain, simulates, and submits it through Matching.verifyAndMatch, paying the gas.",
+        "description": "Opens a perp margin account (subaccount_id 0) and funds it, or tops one up, with one signed DepositModule action. The venue verifies the action, reads the nonce, ownership and the owner's token balance and allowance, the issuer's freezes and pause, and the cNGN cap from the chain, simulates, and submits it through Matching.verifyAndMatch, paying the gas.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1366,19 +1366,19 @@
             "description": "A Matching Action for the DepositModule, signed with EIP-712 against the Matching domain.",
             "required": ["subaccount_id", "nonce", "module", "data", "expiry", "owner", "signer"],
             "properties": {
-              "subaccount_id": { "type": "string", "description": "Base-10. 0 opens a new perp account; otherwise your perp account to top up." },
+              "subaccount_id": { "type": "string", "description": "Base-10. 0 opens a new account under the perp risk manager; otherwise your account to top up." },
               "nonce": { "type": "string", "description": "Base-10 uint256, unused by this owner in the DepositModule." },
               "module": { "type": "string", "description": "The DepositModule address." },
-              "data": { "type": "string", "description": "abi.encode(uint256 amount, address asset, address managerForNewAccount). amount is USDC in 6-decimal base units (1000000000 = 1,000 USDC), explicit and at least 10 USDC; asset is the perp cash asset; managerForNewAccount is the perp risk manager, or zero for a top-up." },
+              "data": { "type": "string", "description": "abi.encode(uint256 amount, address asset, address managerForNewAccount). asset is the cash asset (USDC, minimum 10) or the cNGN escrow 0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98 (cNGN, minimum 15,000); amount is in the token's 6-decimal base units (1000000000 = 1,000), explicit and at least that minimum; managerForNewAccount is the perp risk manager, or zero for a top-up." },
               "expiry": { "type": "string", "description": "Unix seconds; in the future and at most one hour ahead." },
-              "owner": { "type": "string", "description": "Your address: the USDC is pulled from here, and you own the account." },
+              "owner": { "type": "string", "description": "Your address: the tokens are pulled from here, and you own the account." },
               "signer": { "type": "string", "description": "Must equal owner." }
             }
           },
           "signature": { "type": "string", "description": "EIP-712 signature by signer: 65 bytes, or longer for an ERC-1271 wallet." },
           "permit": {
             "type": "object",
-            "description": "Optional EIP-2612 permit on Base USDC from owner to the DepositModule, instead of a prior approve. The venue submits it with the DepositModule as spender, and skips it when the allowance already covers the deposit.",
+            "description": "Optional EIP-2612 permit on Base USDC from owner to the DepositModule, instead of a prior approve. USDC only: cNGN has no permit, and a cNGN deposit carrying one is refused. The venue submits it with the DepositModule as spender, and skips it when the allowance already covers the deposit.",
             "required": ["value", "deadline", "signature"],
             "properties": {
               "value": { "type": "string", "description": "Base-10, 6-decimal USDC base units; at least the deposit amount." },
@@ -1390,7 +1390,7 @@
       },
       "DepositReceipt": {
         "type": "object",
-        "required": ["accepted", "tx_hash", "amount_usdc", "amount_units", "credited_cash_e18"],
+        "required": ["accepted", "tx_hash", "asset", "asset_symbol", "amount", "amount_units", "credited_e18"],
         "properties": {
           "action_hash": { "type": "string", "description": "EIP-712 hash of the signed action (Matching.getActionHash); the key for GET /v1/deposits/{action_hash}." },
           "status": { "type": "string", "enum": ["pending", "submitted", "confirmed", "reverted", "rejected", "unknown"] },
@@ -1399,15 +1399,19 @@
           "receipt_status": { "type": "string", "enum": ["success", "reverted", "timeout"], "description": "timeout: broadcast, not yet confirmed." },
           "block_number": { "type": "string" },
           "subaccount_id": { "type": "string", "description": "The account credited: your new account when subaccount_id was 0. Absent until the receipt is known." },
-          "amount_usdc": { "type": "string", "description": "The deposit in USDC, with 6 decimal places." },
-          "amount_units": { "type": "string", "description": "The same amount in 6-decimal USDC base units, as signed." },
-          "credited_cash_e18": { "type": "string", "description": "What the account's cash rises by, at the ledger's 18 decimals." },
+          "asset": { "type": "string", "description": "The wrapped asset credited: the cash asset (USDC) or the cNGN escrow." },
+          "asset_symbol": { "type": "string", "enum": ["USDC", "cNGN"] },
+          "amount": { "type": "string", "description": "The deposit in the token, with 6 decimal places." },
+          "amount_units": { "type": "string", "description": "The same amount in the token's 6-decimal base units, as signed." },
+          "credited_e18": { "type": "string", "description": "What the account's balance of the asset rises by, at the ledger's 18 decimals." },
+          "amount_usdc": { "type": "string", "description": "Same as amount; USDC deposits only." },
+          "credited_cash_e18": { "type": "string", "description": "Same as credited_e18; USDC deposits only." },
           "permit_tx_hash": { "type": "string", "description": "The permit's transaction, when the deposit carried a permit and it was needed." }
         }
       },
       "DepositRecord": {
         "type": "object",
-        "required": ["action_hash", "status", "owner", "amount_usdc", "amount_units", "credited_cash_e18"],
+        "required": ["action_hash", "status", "owner", "asset", "asset_symbol", "amount", "amount_units", "credited_e18"],
         "properties": {
           "action_hash": { "type": "string" },
           "status": { "type": "string", "enum": ["pending", "submitted", "confirmed", "reverted", "rejected", "unknown"], "description": "rejected: refused before anything was sent; the same request may be resubmitted." },
@@ -1418,9 +1422,13 @@
           "tx_hash": { "type": "string" },
           "permit_tx_hash": { "type": "string", "description": "The permit's transaction, when the deposit carried a permit and it was needed." },
           "block_number": { "type": "string" },
-          "amount_usdc": { "type": "string" },
+          "asset": { "type": "string" },
+          "asset_symbol": { "type": "string", "enum": ["USDC", "cNGN"] },
+          "amount": { "type": "string" },
           "amount_units": { "type": "string" },
-          "credited_cash_e18": { "type": "string" },
+          "credited_e18": { "type": "string" },
+          "amount_usdc": { "type": "string", "description": "USDC deposits only." },
+          "credited_cash_e18": { "type": "string", "description": "USDC deposits only." },
           "error": { "type": "string" },
           "revert": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" },
