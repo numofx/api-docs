@@ -39,6 +39,16 @@ exactly for fills from before fees were recorded. `fee` is absent only when the 
 `tx_hash` is the Base transaction that settled the fill. It is absent for fills recorded before
 transaction hashes were stored.
 
+## Variation margin
+
+A future fill settles variation margin at once: the engine marks the new position to the mark, so a
+buy above the mark (or a sell below it) pays the gap, and the other side receives it. `mark_price` is
+the mark in force when the fill's transaction ran (a mark set later in the same block does not
+count), and `vm_cngn` is what the fill
+settled to your account, in cNGN, negative when paid: your side × the USDC notional ×
+(`mark_price` − `price`). The engine takes it from your cNGN and covers any shortfall from USDC at the
+index. Both are absent on spot and the perp, and on a future fill whose mark the venue could not read.
+
 ## Retention
 
 Fills are kept indefinitely. An order that traded is never pruned, even after it is cancelled or

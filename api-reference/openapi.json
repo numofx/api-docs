@@ -1312,6 +1312,8 @@
           "display_name": { "type": "string" },
           "fee": { "type": "string", "description": "What your order paid on the fill, in USDC. 0 for a maker fill; for a taker, the fee charged. Absent when not known." },
           "tx_hash": { "type": "string", "description": "The Base transaction that settled the fill. Absent for fills recorded before it was stored." },
+          "mark_price": { "type": "string", "description": "Futures only: the mark the fill settled against, cNGN per USDC: the mark in force when the fill's transaction ran. Absent on other markets and when the venue could not read it." },
+          "vm_cngn": { "type": "string", "description": "Futures only: the variation margin the fill settled at once, in cNGN to your account (negative when paid): your side × the USDC notional × (mark_price − price). Absent whenever mark_price is." },
           "spot_contract": {
             "$ref": "#/components/schemas/SpotContract",
             "description": "The fill at display scales: ui_intent.size is the cNGN that changed hands, ui_intent.price the USDC per cNGN it traded at, and balance_delta what the fill moved."
