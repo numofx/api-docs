@@ -152,33 +152,32 @@ These are the most common rejections, and they almost always mean the body was s
   {
     "error": "unknown_market",
     "message": "no such market: NOPE",
-    "markets": ["cNGN-USDC", "cNGN-PERP"]
+    "markets": ["USDC-cNGN-30NOV26", "cNGN-USDC"]
   }
   ```
 
   Two messages occur. `no such market: <identifier>` means the `symbol`, or the
   `asset_address` + `sub_id` pair, matched nothing: identifiers match exactly, with no prefix or
-  case folding, and the deprecated `USDCcNGN-SPOT` and `USDCcNGN-PERP` still resolve until
+  case folding, and the deprecated `USDCcNGN-SPOT` still resolves until
   2027-01-06. `symbol or asset_address is required` means the request named no market at all.
   Before 2026-10-08 both cases returned the spot book.
 </ParamField>
 
 <ParamField body="order_entry_spec and ui_intent are only supported for the cNGN/USDC spot and perp contracts" type="400">
-  These two fields apply to `cNGN-USDC` and `cNGN-PERP` only. Omit them on orders for any
-  other market.
+  These two fields apply to `cNGN-USDC` only. Omit them on orders for any other market,
+  including a future.
 </ParamField>
 
 ## Order translation (`ui_intent`)
 
-These apply to `cNGN-USDC` and `cNGN-PERP`. Both fields are optional — omit them and your
+These apply to `cNGN-USDC`. Both fields are optional — omit them and your
 raw engine values are used as sent. Send either one and the rules below apply. Since the cNGN-USDC
 orientation the translation is the identity: the engine order is the `ui_intent`, with the price in
 USDC per cNGN and the size in cNGN. See the [Spot market](/spot) guide for the units involved.
 
 <ParamField body={'order_entry_spec must be "cngn_usdc_spot_v1" for this market\'s ui_intent'} type="400">
   You sent `ui_intent` without `order_entry_spec`, or with a spec that is not this market's own.
-  The error names the spec the market expects: `cngn_usdc_spot_v1` on spot, `cngn_usdc_perp_v1` on
-  the perp. A spot intent cannot be replayed on the perp or the other way round, and the retired
+  The error names the spec the market expects, `cngn_usdc_spot_v1`. The retired
   `usdc_cngn_spot_v1` and `usdc_cngn_perp_v1` specs are refused with this error.
 </ParamField>
 

@@ -12,16 +12,15 @@ book, in trades, in candles, and in the `ui_intent` you submit — is **USDC per
   cNGN-USDC: base cNGN, quote USDC. Before that it was quoted the other way, as USDC priced in cNGN
   with sizes in USDC, and the API translated between the two.
 
-  - The identifiers changed on 2026-10-08, after the orientation did: `cNGN-USDC` and `cNGN-PERP`
-    are now what you pass as `symbol`, `market` and `ticker_id`, matching `display_name`. The old
-    `USDCcNGN-SPOT` and `USDCcNGN-PERP` remain deprecated aliases until 2027-01-06 (see the note
+  - The identifier changed on 2026-10-08, after the orientation did: `cNGN-USDC` is now what you
+    pass as `symbol`, `market` and `ticker_id`, matching `display_name`. The old
+    `USDCcNGN-SPOT` remains a deprecated alias until 2027-01-06 (see the note
     under [Discover the market](#discover-the-market)).
   - If you read `/v1/integrations/tickers`, `/orderbook` or `/trades`: `base_currency` is now `cNGN`
     and `target_currency` `USDC`. Prices are USDC per cNGN, `base_volume` and book quantities are
     cNGN, `target_volume` is USDC. A `buy` is a buy of cNGN.
-  - If you submit `ui_intent`: send `order_entry_spec: "cngn_usdc_spot_v1"` (or
-    `cngn_usdc_perp_v1` on the perp), a price in USDC per cNGN, a size in cNGN, and the side you mean
-    in cNGN. The engine order is now identical to the intent — nothing is inverted, and no formula
+  - If you submit `ui_intent`: send `order_entry_spec: "cngn_usdc_spot_v1"`, a price in USDC per
+    cNGN, a size in cNGN, and the side you mean in cNGN. The engine order is now identical to the intent — nothing is inverted, and no formula
     stands between them. The old `usdc_cngn_*_v1` specs are refused.
   - If you read `ui_intent` on orders, trades or fills: `price` is USDC per cNGN, `size` is cNGN, and
     `side` equals the engine side.
@@ -187,12 +186,11 @@ There is no inversion and no derived size any more. When you also send `side`, `
 A fill of the whole order moves balances by `balance_delta`: a buy of size `S` at price `P` is cNGN
 `+S` and USDC `-S x P`; a sell is cNGN `-S` and USDC `+S x P`.
 
-`order_entry_spec` and `ui_intent` are accepted on the two markets that carry the contract —
-`cNGN-USDC` with `cngn_usdc_spot_v1` and `cNGN-PERP` with `cngn_usdc_perp_v1` — and
-refused everywhere else. The spec must be the market's own: an intent sent with the other market's
-spec, or with a retired `usdc_cngn_*_v1` spec, is rejected with
+`order_entry_spec` and `ui_intent` are accepted on `cNGN-USDC` only, with `cngn_usdc_spot_v1`, and
+refused everywhere else, including on [futures](/futures). An intent sent with a retired
+`usdc_cngn_*_v1` spec is rejected with
 `order_entry_spec must be "cngn_usdc_spot_v1" for this market's ui_intent`. Omit both fields to
-submit raw engine values, which on these markets are the same values anyway.
+submit raw engine values, which on spot are the same values anyway.
 
 See [Authentication and signing](/signing) for building the signed payload, and
 [Create order](/api-reference/endpoint/create) for the full request body.

@@ -79,9 +79,9 @@ Send these as JSON text frames. The `op` field selects the operation.
 </ParamField>
 
 <ParamField body="market" type="string">
-  Market identifier such as `cNGN-USDC`, or an `asset_address:sub_id` pair.
+  Market identifier such as `cNGN-USDC` or `USDC-cNGN-30NOV26`, or an `asset_address:sub_id` pair.
   Required for `book` and `trades`. Optional for `orders`, where it scopes the stream to a
-  single market. The deprecated `USDCcNGN-SPOT` and `USDCcNGN-PERP` are accepted until
+  single market. The deprecated `USDCcNGN-SPOT` is accepted until
   2027-01-06; whichever identifier you subscribe with, every frame names the market by its
   canonical identifier, and an `unsubscribe` with any identifier for the market ends the
   subscription.

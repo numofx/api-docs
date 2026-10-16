@@ -125,9 +125,9 @@ The matching loop in `markets-service` identifies crossed orders and emits a pay
   </Card>
 </CardGroup>
 
-## Fund a perp account
+## Fund a trading account
 
-To trade `cNGN-PERP` or `cNGN-USDC` you need an account holding USDC, cNGN or both. Approve the `DepositModule` for your token once,
+To trade `cNGN-USDC` or a cNGN future you need an account holding USDC, cNGN or both. Approve the `DepositModule` for your token once,
 on chain (or [sign a USDC permit](/api-reference/endpoint/deposits#or-sign-a-permit-instead) instead and pay no gas
 at all), then sign one `Action` and post it to [`POST /v1/deposits`](/api-reference/endpoint/deposits) with
 `subaccount_id` `0`. The venue opens the account, funds it and pays the gas, and the response's `subaccount_id` is

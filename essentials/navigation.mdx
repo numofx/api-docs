@@ -48,7 +48,8 @@ Important concepts:
 - managers validate final account state and can handle settlement and liquidation
 - assets define transfer semantics and settlement hooks
 - `CashAsset` is the main cash accounting rail
-- `PerpAsset` tracks unsettled PnL, funding, and price state for perpetual-style instruments
+- `FutureAsset` tracks each dated future series: its mark, fill band and settlement price
+- the `MarginEngine` margins spot and futures positions in one account, settles variation margin and liquidates
 
 ## Why this split exists
 

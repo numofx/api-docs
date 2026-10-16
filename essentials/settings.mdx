@@ -25,11 +25,11 @@ Use `GET /v1/markets` before you submit anything. The response contains the cano
 - `sub_id`
 - `contract_type`
 - `settlement_type`
-- `base_asset_symbol` and `quote_asset_symbol` — `cNGN` and `USDC` on both markets
-- `display_name` — `cNGN-USDC` for spot, `cNGN-PERP` for the perp
+- `base_asset_symbol` and `quote_asset_symbol` — `cNGN` and `USDC` on spot, `USDC` and `cNGN` on a future
+- `display_name` — `cNGN-USDC` for spot, `USDC-cNGN-<DDMONYY>` for a future, such as `USDC-cNGN-30NOV26`
 - `tick_size`
-- `order_entry_spec` — `cngn_usdc_spot_v1` or `cngn_usdc_perp_v1`, the `ui_intent` contract the
-  market accepts
+- `order_entry_spec` — `cngn_usdc_spot_v1`, the `ui_intent` contract spot accepts. Futures have none
+  and take raw engine values.
 
 ## Reading the book
 

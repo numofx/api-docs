@@ -3,10 +3,10 @@ title: 'Create a deposit'
 openapi: 'POST /v1/deposits'
 ---
 
-Opens a perp margin account and funds it, or tops up one you already have, with one signed `Action` for the
+Opens a trading account under the MarginEngine and funds it, or tops up one you already have, with one signed `Action` for the
 `DepositModule`. The venue verifies it and submits it through `Matching.verifyAndMatch`, paying the gas; the module
 pulls your USDC or cNGN, credits it to the account, and Matching records you as the account's owner. One account
-trades both `cNGN-USDC` spot and `cNGN-PERP`, so a deposit funds both.
+trades both `cNGN-USDC` spot and the cNGN [futures](/futures), so a deposit funds both.
 
 <Note>
   For USDC, either approve the `DepositModule` once, on chain, or [sign a permit](#or-sign-a-permit-instead) with the
@@ -57,7 +57,7 @@ Sign an [`Action`](/signing) against the same `Matching` domain as an order, wit
 
 | Field | Value |
 | --- | --- |
-| `subaccountId` | `0` to open a new perp account; your perp account's id to top it up |
+| `subaccountId` | `0` to open a new account; your account's id to top it up |
 | `nonce` | any unused `uint256`; nonces are per owner and per module |
 | `module` | the DepositModule: `0x6540f8d9Eb599b045C05E45cb6a5B1730a806658` on Base |
 | `data` | `abi.encode(uint256 amount, address asset, address managerForNewAccount)` |
@@ -72,19 +72,19 @@ In `data`:
   | Token | `asset` | Minimum |
   | --- | --- | --- |
   | USDC | the cash asset, `0xA74E49b4Ed7cb176bc02ef4D8a1A3240C9aD4272` (`quote_asset_address` on `GET /v1/markets`) | 10 USDC |
-  | cNGN | the cNGN escrow, `0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98` (`asset_address` under the perp's `collateral_assets`) | 15,000 cNGN |
+  | cNGN | the cNGN escrow, `0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98` (`asset_address` of `cNGN-USDC` on `GET /v1/markets`) | 15,000 cNGN |
 
   No other asset is accepted.
 * `amount` is in the **token's 6-decimal base units**: `1000000000` is 1,000 USDC, or 1,000 cNGN. It must be
   explicit — the "whole balance" sentinel `type(uint256).max` is refused — and at least the minimum above.
-* `managerForNewAccount` is the perp risk manager, `0xDE0423D0a1E15536265C9513d2e0c10DAb5835D4`. For a top-up it is
-  ignored; send the same address or zero.
+* `managerForNewAccount` is the MarginEngine, `0xA19E296021c9DF25b90D96C2A0793CC3D0800758` (`margin_manager_address` on
+  `GET /v1/markets`). For a top-up it is ignored; send the same address or zero.
 
 The account is credited at 18 decimals, so 1,000 USDC appears on chain as `1000000000000000000000` of cash, and 1,000
 cNGN as the same number of the cNGN escrow. The response states the amount in all three forms.
 
-cNGN counts toward margin at its `margin_factor` (50%), and all cNGN under the perp risk manager shares one cap,
-`cap` in `collateral_assets`. A deposit that would cross it is refused with a **400** that says how much room is left.
+cNGN counts toward margin at its base margin factor (50%), and all cNGN under the MarginEngine shares one cap, set on
+chain. A deposit that would cross it is refused with a **400** that says how much room is left.
 
 Send the action's seven fields as strings (numbers in base 10, `data` as hex) with the signature:
 
@@ -94,7 +94,7 @@ Send the action's seven fields as strings (numbers in base 10, `data` as hex) wi
     "subaccount_id": "0",
     "nonce": "7",
     "module": "0x6540f8d9Eb599b045C05E45cb6a5B1730a806658",
-    "data": "0x000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000a74e49b4ed7cb176bc02ef4d8a1a3240c9ad4272000000000000000000000000de0423d0a1e15536265c9513d2e0c10dab5835d4",
+    "data": "0x000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000a74e49b4ed7cb176bc02ef4d8a1a3240c9ad4272000000000000000000000000a19e296021c9df25b90d96c2a0793cc3d0800758",
     "expiry": "1789400600",
     "owner": "0xYourAddress",
     "signer": "0xYourAddress"
@@ -108,7 +108,7 @@ Send the action's seven fields as strings (numbers in base 10, `data` as hex) wi
 In order, and every check fails closed:
 
 1. The request: module, signer equals owner, expiry, `data` exactly three words, an accepted asset, an explicit
-   amount at or above that asset's minimum, no permit on cNGN, and the perp risk manager for a new account. Refused
+   amount at or above that asset's minimum, no permit on cNGN, and the MarginEngine for a new account. Refused
    with **400**.
 2. At most one deposit in progress per owner, three requests a minute, and six submitted deposits an hour. Refused
    with **429**; the hourly limit sends `Retry-After`. A request refused for any other reason does not count toward
@@ -118,8 +118,8 @@ In order, and every check fails closed:
    issuer has paused the token, or frozen the venue's `DepositModule` or custody contract, deposits of that token
    are suspended for everyone: **503**.
 5. Read from the chain before anything is submitted, each refused with **400** and what to do: the nonce is unused;
-   for a top-up, you own the account and it is a perp account; your wallet holds the tokens and has approved the
-   `DepositModule` for them; the asset still accepts deposits under the perp risk manager, and the deposit fits
+   for a top-up, you own the account and it is under the MarginEngine; your wallet holds the tokens and has approved the
+   `DepositModule` for them; the asset still accepts deposits under the MarginEngine, and the deposit fits
    under its cap.
 6. The executor's simulation. The reverts above, if they still happen (a race), come back as **400** with `revert`
    naming them; any other revert is **422**.

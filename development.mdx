@@ -41,7 +41,7 @@ Numo's orderbook is split across four layers:
     `execution-service` validates the payload, ABI-encodes `TradeModule.OrderData`, simulates `Matching.verifyAndMatch(...)`, and broadcasts the transaction through `execution-contracts`.
   </Step>
   <Step title="6. Risk and settlement">
-    `risk-core` validates account state through manager and asset hooks, updates margin state, and handles cash settlement, funding, and liquidation behavior.
+    `risk-core` validates account state through manager and asset hooks, updates margin state, and handles cash settlement, variation margin, and liquidation behavior.
   </Step>
 </Steps>
 
@@ -87,4 +87,4 @@ The settlement note in the matcher registry is:
 - stores balances in `SubAccounts`
 - lets managers validate final account state
 - lets assets track transfer semantics and settlement inputs
-- provides `CashAsset` and `PerpAsset` primitives used by managers during settlement
+- provides `CashAsset` and `FutureAsset` primitives the `MarginEngine` uses during settlement

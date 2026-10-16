@@ -31,8 +31,12 @@ Sign an [`Action`](/signing) against the same `Matching` domain as an order, wit
 
 | Balance | `asset` | Paid out as |
 | --- | --- | --- |
-| USDC | `0x364058aFF6f36E01505fB2Cc870f8B6BD4835e84` | USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
-| cNGN | `0x9D806fD040a719D27a8E5E77dc5aE0ED1e089493` | cNGN `0x46C85152bFe9f96829aA94755D9f915F9B10EF5F` |
+| USDC | the cash asset, `0xA74E49b4Ed7cb176bc02ef4D8a1A3240C9aD4272` | USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| cNGN | the cNGN escrow, `0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98` | cNGN `0x46C85152bFe9f96829aA94755D9f915F9B10EF5F` |
+
+These are the assets a trading account under the MarginEngine holds. An account opened before the 2026-10-04 cutover
+may still hold balances in the retired wrapped assets, wrapped USDC `0x364058aFF6f36E01505fB2Cc870f8B6BD4835e84` and
+wrapped cNGN `0x9D806fD040a719D27a8E5E77dc5aE0ED1e089493`. Withdrawals from them are still accepted.
 
 `amount` is in the token's native decimals — 6 for both, so 1 USDC is `1000000`.
 
@@ -44,7 +48,7 @@ Send the action's seven fields as strings (numbers in base 10, `data` as hex) wi
     "subaccount_id": "19",
     "nonce": "7328734720000000",
     "module": "0x0a10AE2f5D2482cE1e43bC309D430B8861C2b5aB",
-    "data": "0x000000000000000000000000364058aff6f36e01505fb2cc870f8b6bd4835e8400000000000000000000000000000000000000000000000000000000001e82d7",
+    "data": "0x000000000000000000000000a74e49b4ed7cb176bc02ef4d8a1a3240c9ad427200000000000000000000000000000000000000000000000000000000001e82d7",
     "expiry": "1789400600",
     "owner": "0xYourAddress",
     "signer": "0xYourAddress"
