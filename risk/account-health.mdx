@@ -1,0 +1,35 @@
+---
+title: "Account health"
+description: "Read your margin surplus and know what each threshold means"
+---
+
+Your account's health is its margin surplus: what your collateral is worth, minus what your
+positions require. See [Margin math](/risk/margin-math) for the formula.
+
+## Read it
+
+[`GET /v1/positions?subaccount_id=N`](/api-reference/endpoint/positions) reports it under
+`futures_account`:
+
+| Field | Meaning |
+| --- | --- |
+| `im_surplus_usd` | Surplus over initial margin, in USD |
+| `mm_surplus_usd` | Surplus over maintenance margin, in USD |
+
+Both are read from chain. A missing field means the venue could not read it, not zero.
+
+## What each state means
+
+| State | What you can do |
+| --- | --- |
+| `im_surplus_usd` ≥ 0 | Trade freely. |
+| `im_surplus_usd` < 0, `mm_surplus_usd` ≥ 0 | Reduce positions only. Trades that add risk are refused. |
+| `mm_surplus_usd` < 0 | The account can be [liquidated](/risk/liquidation). |
+
+## Stay healthy
+
+- **Watch the mark.** Variation margin moves with every [mark](/risk/mark-price) update.
+- **Hold USDC.** cNGN counts at half its value, and a depeg raises initial margin.
+- **Top up before you need to.** A [deposit](/api-reference/endpoint/deposits) to an existing
+  subaccount raises both surpluses.
+- **Reduce early.** A `reduce_only` order is held only to maintenance margin.

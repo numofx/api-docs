@@ -1,0 +1,43 @@
+---
+title: "Risk warning"
+description: "The risks of trading cNGN spot and futures on Numo"
+---
+
+Trading on Numo can lose you money, including all the collateral in your account. Read these risks
+before you trade.
+
+## Leverage
+
+Futures let you hold up to 4x your margin in notional. A 25% move against a fully levered position
+wipes out its margin. Losses can exceed what you expected if the mark moves quickly.
+
+## Liquidation
+
+If your maintenance margin surplus falls below zero, your account can be
+[liquidated](/risk/liquidation) at a discount. You lose the discount and the liquidation fee.
+
+## cNGN price and depeg
+
+cNGN counts toward margin at half its value, priced at the index. If cNGN falls, your collateral is
+worth less and your initial margin rises through the [depeg penalty](/risk/margin-math#depeg-penalty).
+Variation margin is paid in cNGN first.
+
+## Price feeds
+
+The index and the mark come from external feeds. While the index is stale, no futures fill can
+settle, and you may not be able to reduce a position. A mark update can move your margin by up to
+5% of the mark at once.
+
+## Issuer controls
+
+Circle and the cNGN issuer can freeze wallets and pause their tokens. A freeze or pause can stop
+deposits and withdrawals of that token. See [Collateral](/collateral#issuer-controls).
+
+## Smart contracts
+
+Settlement runs on smart contracts on Base. A bug in them, or in the chain, can cause losses.
+
+## Not advice
+
+Nothing in these docs is financial, legal or tax advice. Make sure trading these products is
+allowed where you live.

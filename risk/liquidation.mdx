@@ -1,0 +1,41 @@
+---
+title: "Liquidation"
+description: "What happens when an account falls below maintenance margin"
+---
+
+When an account's maintenance margin surplus falls below zero, anyone can start a liquidation
+auction for it. The auction sells part or all of the account to bidders until it is healthy again.
+
+## How the auction works
+
+The MarginEngine liquidates through an on-chain Dutch auction.
+
+1. **Start.** Anyone can start the auction once `mm_surplus_usd` is below zero. A liquidation fee is
+   charged to the account and paid to the security module.
+2. **Bid.** A bidder takes a share of the account, positions and collateral together, at the
+   auction's current price. The price falls over time, so the discount grows the longer the auction
+   runs.
+3. **End.** The auction ends once the account is back above its buffer margin. Anyone can end it.
+
+Liquidation can be **partial**. A bid takes at most the share needed to restore the account. An account
+whose value falls below a cutoff set on chain is liquidated in full.
+
+## Insolvent accounts
+
+If an account's value is zero or less, the auction runs in insolvent mode. The security module pays
+bidders to take the account. Any shortfall it cannot cover is shared across the system.
+
+## During an auction
+
+- Your account cannot trade. Fills against your resting orders are refused on chain and retried
+  after the auction ends.
+- Your resting orders are not cancelled. Cancel them yourself if you no longer want them.
+- Liquidations move positions at the mark, outside the [fill band](/futures#the-fill-band).
+
+## Who can bid
+
+A bidder needs a subaccount under the MarginEngine that it owns and that holds only cash.
+
+## Avoid it
+
+Keep `mm_surplus_usd` well above zero. See [Account health](/risk/account-health).

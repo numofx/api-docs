@@ -1,0 +1,44 @@
+---
+title: "Order types"
+description: "Limit orders, post-only, reduce-only and expiry"
+---
+
+Every order on Numo is a **limit order**. You sign a limit price and a size, and the order rests on
+the book until it fills, expires or is cancelled. There are no market, IOC or FOK orders.
+
+To trade at once, price your limit through the opposite side of the [book](/api-reference/endpoint/book).
+
+## Flags
+
+| Field | Markets | Effect |
+| --- | --- | --- |
+| `post_only` | Spot and futures | The order may only add liquidity. |
+| `reduce_only` | Futures only | The order may only shrink your position in that series. |
+
+### Post-only
+
+A `post_only` order is refused on submission if it would cross the book. Once resting, it is never
+the taker on a fill. Use it to make sure you are always the maker. See [Fees](/matching/fees).
+
+### Reduce-only
+
+A `reduce_only` order can only reduce your position in its series.
+
+- It is refused with **422** if you have no position, or if it is on the same side as your
+  position.
+- Each fill is clamped so it never takes your position through zero.
+- Once your position is flat, the order is cancelled with `cancel_reason: "reduce_only_done"` or
+  `"reduce_only_no_position"`.
+- It is refused with **400** on spot.
+
+## Expiry
+
+`expiry` is a unix timestamp that you sign into the order. It must be in the future on submission.
+Once it passes, the order's status becomes `expired` and it no longer fills.
+
+## Futures limits
+
+A futures order's limit price must be inside the [fill band](/futures#the-fill-band) when you
+submit it. See [Orders the venue refuses](/futures#orders-the-venue-refuses) for every refusal.
+
+See [Create order](/api-reference/endpoint/create) for the full request body.

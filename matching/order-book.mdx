@@ -1,0 +1,34 @@
+---
+title: "FIFO order book"
+description: "Price-time priority: how resting orders queue and which one fills first"
+---
+
+The book is a central limit order book with **price-time priority**. Better prices fill first. At
+the same price, the order that arrived first fills first.
+
+## Sort order
+
+| Side | First by | Then by |
+| --- | --- | --- |
+| Bids | Highest limit price | Earliest `created_at` |
+| Asks | Lowest limit price | Earliest `created_at` |
+
+Priority is set when the order is created. Nothing you do later moves it up the queue. To change
+price or size, cancel the order and submit a new one, which joins the back of the queue at its price.
+
+## What fills against what
+
+The matcher walks bids from the best down. For each bid, it walks asks from the best up, until the
+prices no longer cross. It takes the first pair that can settle.
+
+A pair is passed over, and the next one tried, when:
+
+- the later order is `post_only`, so it would be the taker. See [Order types](/matching/order-types).
+- both orders belong to the same subaccount. See [Self-trade prevention](/matching/self-trade-prevention).
+- the pair is waiting out a retry after the chain refused it. See
+  [When a fill would revert](/matching/matching-engine#when-a-fill-would-revert).
+
+## Read the book
+
+- [`GET /v1/book`](/api-reference/endpoint/book) returns the current depth.
+- The [websocket stream](/api-reference/websocket) pushes updates as the book changes.

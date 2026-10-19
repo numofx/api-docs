@@ -30,6 +30,26 @@
             ]
           },
           {
+            "group": "Matching engine",
+            "pages": [
+              "matching/matching-engine",
+              "matching/order-book",
+              "matching/self-trade-prevention",
+              "matching/order-types",
+              "matching/fees"
+            ]
+          },
+          {
+            "group": "Margin and risk",
+            "pages": [
+              "risk/mark-price",
+              "risk/margin-math",
+              "risk/account-health",
+              "risk/liquidation",
+              "risk/risk-warning"
+            ]
+          },
+          {
             "group": "Orders",
             "pages": [
               "signing",

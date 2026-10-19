@@ -1,0 +1,72 @@
+---
+title: "Margin math"
+description: "How the MarginEngine computes initial and maintenance margin for a futures account"
+---
+
+The MarginEngine computes margin for the whole subaccount. It adds up what your collateral is worth
+and subtracts what your positions require. The result is your surplus.
+
+```text
+surplus = USDC cash + cNGN value + pending VM value − Σ requirement
+```
+
+There is one surplus for initial margin (IM) and one for maintenance margin (MM).
+
+## Position requirement
+
+Each futures position requires a share of its USDC notional:
+
+```text
+requirement = |contracts| × 1,000 USDC × rate
+```
+
+| | Rate |
+| --- | --- |
+| Initial margin | 25%, plus the depeg penalty |
+| Maintenance margin | 15% |
+
+Requirements are **gross**. A long in one series does not offset a short in another.
+
+## Collateral value
+
+- **USDC** counts at par.
+- **cNGN** counts at `cNGN held × index × 0.5`. The `0.5` is cNGN's base margin factor.
+- **Pending variation margin** owed to you counts at cNGN's margin factor. Pending VM you owe is
+  taken from your cNGN at the factor first, then from USDC at par.
+
+## Depeg penalty
+
+While cNGN trades below its depeg threshold, the MarginEngine adds a penalty to the IM rate:
+
+```text
+penalty = (threshold − cNGN price) × depeg factor
+```
+
+The penalty applies to initial margin only. The threshold and factor are set on chain.
+
+## Worked example
+
+You hold 2,000 USDC and no cNGN, and buy 4 contracts. Notional is 4,000 USDC.
+
+| | IM | MM |
+| --- | --- | --- |
+| Requirement | 4,000 × 25% = 1,000 | 4,000 × 15% = 600 |
+| Surplus | 2,000 − 1,000 = 1,000 | 2,000 − 600 = 1,400 |
+
+Fees and variation margin change the cash side as you trade. At 25% IM, leverage is capped at 4x.
+
+## Reducing risk
+
+A trade that only reduces a futures position is held to maintenance margin, not initial. You can
+always deleverage while your MM surplus is positive.
+
+## Pre-trade margin check
+
+Before each futures fill, the matcher estimates each account's IM surplus after the fill. Only fills
+that add risk are checked.
+
+- If an account comes up short, its order is held back for 30 seconds.
+- After three refusals, at least a minute apart from the first, the order is cancelled with
+  `cancel_reason: "insufficient_margin"`.
+
+The estimate is deliberately generous. The MarginEngine on chain is the authority.

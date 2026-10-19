@@ -1,0 +1,49 @@
+---
+title: "Matching engine"
+description: "How the venue matches orders off chain and settles each fill on chain"
+---
+
+Numo matches orders off chain and settles every fill on chain. The order book lives in
+markets-service. Each fill is submitted to `Matching.verifyAndMatch` on Base, which checks both
+signatures and moves the assets.
+
+## How a match happens
+
+1. You submit a signed order to [`POST /v1/orders`](/api-reference/endpoint/create). It rests on
+   the book.
+2. The matcher polls the book several times a second. On each pass it takes the best crossed pair
+   in each market, in [price-time priority](/matching/order-book).
+3. The fill size is the smaller of the two remaining amounts. The fill price is the maker's limit
+   price.
+4. The execution service submits the fill on chain. Your order's filled amount updates once the
+   transaction settles.
+
+A market handles one fill at a time. A large order fills against resting orders one by one.
+
+## Maker and taker
+
+The order created later is the taker on each fill. The earlier one is the maker. If both were
+created at the same instant, the one with the higher `order_id` is the taker. See
+[Fees](/matching/fees) for what this means for what you pay.
+
+## When a fill would revert
+
+The matcher simulates each fill before it is sent. If the chain would refuse it, both orders stay on
+the book.
+
+- **A refusal that depends on balances** (for example, an account short of margin) is retried with
+  backoff. Nothing is cancelled.
+- **A refusal that cannot change** while both orders stay as they are skips that pair. Each order can
+  still fill against other orders. An order refused this way against three different subaccounts is
+  cancelled with `cancel_reason: "repeated_permanent_revert"`.
+- **An order that can never settle as signed** is cancelled with
+  `cancel_reason: "unmatchable_signed_order"`.
+
+## Futures
+
+The matcher skips a futures series while it is closed on chain: before it opens, after
+`last_trade_time`, or while its manager is paused. Before each futures fill it also checks:
+
+- The fill price is inside the [fill band](/futures#the-fill-band).
+- Each account adding risk has enough initial margin. See
+  [Pre-trade margin check](/risk/margin-math#pre-trade-margin-check).

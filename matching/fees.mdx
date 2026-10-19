@@ -1,0 +1,43 @@
+---
+title: "Fees"
+description: "Who pays, how much, and the worstFee bound you sign"
+---
+
+The taker pays the fee on each fill. The maker pays nothing on markets with `maker_fee_bps = 0`.
+
+## The schedule
+
+[`GET /v1/markets`](/api-reference/endpoint/get) reports each market's schedule as `taker_fee_bps`
+and `maker_fee_bps`. Read it from there. It is the only source, and the matcher charges exactly what
+it says.
+
+On the cNGN futures, `taker_fee_bps = 25` and `maker_fee_bps = 0`. The fee is 25 bps of notional,
+so 2.5 USDC a contract at any price. Fees are paid from the account's USDC.
+
+## Who is the taker
+
+The taker is the order **created later** of the two on a fill. It is not a property of your account
+or your strategy.
+
+<Warning>
+  Resting a quote does not make you the maker. If your order arrives after the one it matches
+  against, you are the taker on that fill and you pay the taker fee. A bot that requotes often is
+  usually the later order, so it is usually the taker.
+</Warning>
+
+To be sure you are the maker, set [`post_only`](/matching/order-types#post-only).
+
+## The `worstFee` bound
+
+`worstFee` caps what a fill may charge you. If the fee would exceed it, the contract reverts with
+`TM_FeeTooHigh` and the fill does not happen.
+
+- **It is per unit filled, not a total.** On spot, the right bound is `feeRate × price`, so it
+  changes with price. On futures, it is per contract, in USDC × 1e18.
+- **Leave headroom above the schedule.** Resting orders were signed under the old schedule and
+  cannot be re-signed when it changes. Numo's own clients sign 30 bps against a 25 bps schedule.
+- **Do not sign `0` on a market with a taker fee.** Every fill where you are the taker reverts,
+  until the order expires.
+
+See [Authentication and signing](/signing) for how to encode it, and
+[Spot market](/spot#fees-follow-arrival-order-not-identity) for a worked spot example.

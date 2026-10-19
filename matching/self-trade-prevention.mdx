@@ -1,0 +1,26 @@
+---
+title: "Self-trade prevention"
+description: "Orders from the same subaccount never fill against each other"
+---
+
+Two orders from the same subaccount never fill against each other. The chain refuses a trade
+between an account and itself, so the matcher does not try it.
+
+## What happens
+
+When your bid crosses your own ask in the same subaccount, the matcher skips that pair.
+
+- **Neither order is cancelled.** Both stay on the book with no `cancel_reason`.
+- **Both can still fill against other subaccounts.** The matcher moves on to the next crossed pair.
+
+If your own order is the only one crossing yours, the book can show a crossed price until one of
+them is cancelled or fills against someone else.
+
+## Scope
+
+Self-trade prevention compares **subaccounts**, not owners. Two subaccounts with the same owner can
+trade with each other. If you run separate strategies from one wallet in separate subaccounts, they
+can fill against each other.
+
+To avoid crossing yourself, cancel your resting order before you submit one on the other side at
+a crossing price.

@@ -1,0 +1,38 @@
+---
+title: "Mark price"
+description: "Where the futures mark comes from, how often it moves, and what it drives"
+---
+
+The mark price is the price the MarginEngine values a futures position at. It drives
+[variation margin](/futures#variation-margin), [margin](/risk/margin-math) and
+[liquidation](/risk/liquidation). Spot has no mark.
+
+## Where it comes from
+
+The mark is pulled on chain from a signed forward feed. Anyone can trigger the pull. The forward
+is published from the series' order book when the book is deep enough on both sides. Otherwise it
+follows the carry forward from the index.
+
+## How it can move
+
+The chain enforces three limits on each update:
+
+| Limit | Value |
+| --- | --- |
+| Frequency | At most once an hour |
+| Move per update | At most 5% from the previous mark |
+| Distance from the index | Inside the band around the index |
+
+The band is 10% either side of the index, and narrows linearly to 1% over the last 14 days before
+expiry. It is the same band that bounds fills. See [The fill band](/futures#the-fill-band).
+
+## Read it
+
+[`GET /v1/markets`](/api-reference/endpoint/get) reports `mark_price` and `index_price` for each
+series. [`GET /v1/positions`](/api-reference/endpoint/positions) reports `mark_price` and
+`mark_updated_at` on each position. The mark is quoted in cNGN per USDC.
+
+## At expiry
+
+At expiry, positions close out at the settlement price, not the mark. See
+[Settlement](/futures#settlement).
