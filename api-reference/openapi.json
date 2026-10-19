@@ -1447,7 +1447,7 @@
       },
       "PositionsResponse": {
         "type": "object",
-        "required": ["futures", "positions", "accounts"],
+        "required": ["futures"],
         "properties": {
           "futures": {
             "type": "array",
@@ -1457,13 +1457,18 @@
           "futures_account": { "$ref": "#/components/schemas/FuturesAccount" },
           "positions": {
             "type": "array",
-            "description": "Reserved for markets this reference does not cover. Always present; empty for an account that holds none of them.",
+            "description": "Reserved for markets this reference does not cover. Empty for an account that holds none of them; absent when they could not be read (see perp_error). Absent is unknown, not empty.",
             "items": { "type": "object" }
           },
           "accounts": {
             "type": "array",
-            "description": "Reserved for markets this reference does not cover. Always present.",
+            "description": "Reserved for markets this reference does not cover. Absent when they could not be read (see perp_error).",
             "items": { "type": "object" }
+          },
+          "perp_error": {
+            "type": "string",
+            "description": "Present only when positions and accounts could not be read, and why. The futures are read independently and are still served.",
+            "example": "could not read positions from chain"
           }
         }
       },
