@@ -11,7 +11,7 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Docs",
         "groups": [
           {
             "group": "Getting started",
@@ -42,7 +42,7 @@
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API",
         "groups": [
           {
             "group": "API documentation",
@@ -88,14 +88,9 @@
     "global": {
       "anchors": [
         {
-          "anchor": "API reference",
+          "anchor": "API",
           "href": "/api-reference/introduction",
           "icon": "terminal"
-        },
-        {
-          "anchor": "GitHub",
-          "href": "https://github.com/numofx/api-docs",
-          "icon": "github"
         }
       ]
     }
@@ -105,29 +100,23 @@
     "dark": "/logo/dark.png"
   },
   "navbar": {
-    "links": [
-      {
-        "label": "GitHub",
-        "href": "https://github.com/numofx/api-docs"
-      }
-    ],
     "primary": {
       "type": "button",
-      "label": "Quickstart",
-      "href": "/quickstart"
+      "label": "Launch App",
+      "href": "https://app.numofx.com"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
