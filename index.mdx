@@ -29,3 +29,49 @@ Numo is a noncustodial exchange for futures on the Nigerian naira, built on Base
     Trade forward rates with futures.
   </Card>
 </Columns>
+
+## Accessing Numo
+
+Numo is available at [app.numofx.com](https://app.numofx.com).
+
+## Connect a wallet and fund your account
+
+Before you begin, make sure you have USDC or cNGN on Base. Numo accepts both as
+[collateral](/collateral).
+
+<Steps>
+  <Step title="Choose how to sign in">
+    Select **Connect Wallet** at [app.numofx.com](https://app.numofx.com).
+
+    <Columns cols={2}>
+      <Card title="Option A: Email" icon="user">
+        **Recommended for first-time users**
+
+        Enter your email. Numo creates a wallet for you through Privy, so you do not need to
+        install a wallet extension.
+      </Card>
+
+      <Card title="Option B: Browser wallet" icon="wallet">
+        **For users with a wallet on Base**
+
+        Connect a browser wallet such as MetaMask or Coinbase Wallet, on the Base network.
+      </Card>
+    </Columns>
+
+    <Warning>
+      A wallet with an EIP-7702 delegation, such as an EOA upgraded to a smart account, cannot sign
+      for Numo unless its delegate supports ERC-1271. Use an undelegated wallet.
+    </Warning>
+  </Step>
+
+  <Step title="Deposit">
+    Select **Deposit**, choose USDC or cNGN, and enter an amount. The minimum is 10 USDC or 15,000
+    cNGN.
+
+    Your first deposit opens your [subaccount](/subaccounts). Numo pays the gas.
+  </Step>
+
+  <Step title="Trade">
+    Pick [spot](/spot) or [futures](/futures) and place an order.
+  </Step>
+</Steps>
