@@ -42,11 +42,25 @@
           {
             "group": "Margin and risk",
             "pages": [
-              "risk/mark-price",
               "risk/margin-math",
               "risk/account-health",
               "risk/liquidation",
               "risk/risk-warning"
+            ]
+          },
+          {
+            "group": "Real world assets",
+            "pages": [
+              "markets/index-price",
+              "markets/impact-pricing",
+              "markets/mark-price-and-bounds",
+              "markets/market-specs"
+            ]
+          },
+          {
+            "group": "Market parameters",
+            "pages": [
+              "markets/market-parameters"
             ]
           },
           {
@@ -68,6 +82,12 @@
             "group": "AI tools",
             "pages": [
               "ai-tools/mcp"
+            ]
+          },
+          {
+            "group": "FAQ",
+            "pages": [
+              "faq"
             ]
           },
           {

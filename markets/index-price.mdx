@@ -1,0 +1,59 @@
+---
+title: "Index price"
+description: "How the cNGN index is built from off-chain naira rates and published on chain"
+---
+
+The index is the reference rate for cNGN against USDC. It centres the futures
+[fill band](/futures#the-fill-band), bounds the [mark](/markets/mark-price-and-bounds), sets the
+settlement price, and values cNGN held as [collateral](/collateral).
+
+## Sources
+
+1 cNGN redeems for 1 naira, so the index tracks the naira's rate against the dollar. It reads three
+NGN-per-USDT rates:
+
+- Quidax (`usdtngn`)
+- Textile (`USDT_NGN`)
+- Bybit P2P
+
+USDT is treated as equal to USDC.
+
+## How it is computed
+
+1. **Sample.** Every minute, the venue reads all three sources and takes the median. A sample is
+   discarded if any source is missing, or if any source is more than 1.5% from the median.
+2. **Average.** Every minute, it publishes the time-weighted average of the last five minutes of
+   samples. It needs at least three samples, the newest no older than three minutes.
+3. **Publish.** It signs the average into the index feed on Base. A single update can move the
+   index by at most 1.5%.
+
+### Peg check
+
+The index also watches cNGN's own peg: the 15-minute average of cNGN's price in naira on Quidax. If
+cNGN trades more than 1% away from 1 naira, no sample is taken and the index stops updating.
+
+## Staleness
+
+The index feed has a 20-minute heartbeat. If it has not updated in 20 minutes, it is stale:
+
+- `band_status` on [`GET /v1/markets`](/api-reference/endpoint/get) reads `index_stale`.
+- The chain refuses every futures fill, and the venue refuses new futures orders.
+- The mark does not update.
+
+Trading resumes as soon as the index updates.
+
+## Direction
+
+On chain, the index feed is in USDC per cNGN, with 18 decimals. The futures market quotes cNGN per
+USDC, so `index_price` on `GET /v1/markets` is the inverse.
+
+| Where | Unit | Example |
+| --- | --- | --- |
+| Index feed on chain | USDC per cNGN | `0.000725` |
+| `index_price` on a future | cNGN per USDC | `1380` |
+
+The index feed is `0xFaC420d160C7c219A72DC676971670980bAC20a5` on Base.
+
+## Spot
+
+The `cNGN-USDC` spot market does not use the index. Spot prices come only from its order book.

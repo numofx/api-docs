@@ -1,0 +1,55 @@
+---
+title: "Market specs"
+description: "Contract specifications for cNGN-USDC spot and the cNGN future"
+---
+
+Numo lists two markets: `cNGN-USDC` spot and one cNGN future per expiry, currently
+`USDC-cNGN-30NOV26`. Read the live values from [`GET /v1/markets`](/api-reference/endpoint/get)
+rather than hard-coding them.
+
+## Specs
+
+| | `cNGN-USDC` | `USDC-cNGN-30NOV26` |
+| --- | --- | --- |
+| Type | Spot | Cash-settled dated future |
+| Base / quote | cNGN / USDC | USDC / cNGN |
+| Price unit | USDC per cNGN | cNGN per USDC |
+| Size unit | cNGN | USDC of notional |
+| Contract size | — | 1,000 USDC |
+| Minimum size | 1 cNGN | 1 USDC |
+| Size step | 1 cNGN | 1 USDC |
+| Tick size | 1e-18 | 1e-18 |
+| Taker fee | 25 bps | 25 bps of notional |
+| Maker fee | 0 | 0 |
+| Margin | Fully funded | 25% initial, 15% maintenance |
+| Settlement | Each fill, on chain | Cash, at expiry |
+
+## Futures dates
+
+| | Value |
+| --- | --- |
+| Expiry | 2026-11-30 14:00 UTC (`expiry_timestamp` 1796047200) |
+| Last trade | 2026-11-30 13:00 UTC, one hour before expiry |
+| Settlement price | Time-weighted average of the [index](/markets/index-price) over the last hour |
+| Settled in | cNGN and USDC, through [variation margin](/futures#variation-margin) |
+
+A new series gets a new identifier, `USDC-cNGN-<DDMONYY>`, and its own expiry.
+
+<Note>
+  `future.last_trade_time` is when the series stops trading. The top-level `last_trade_timestamp`
+  on `GET /v1/markets` is something else: the time of the market's most recent fill.
+</Note>
+
+## Signing scales
+
+| | `cNGN-USDC` | `USDC-cNGN-30NOV26` |
+| --- | --- | --- |
+| `amount_scale` | 1e18 | 1e15 (1 USDC of notional) |
+| `limitPrice` | price × 1e18 | price × 1e18 |
+
+See [Authentication and signing](/signing).
+
+## Trading hours
+
+Both markets trade around the clock. A future stops at its `last_trade_time`, and the matcher
+pauses while the index is stale or the MarginEngine is paused.

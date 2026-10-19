@@ -1,0 +1,80 @@
+---
+title: "FAQ"
+description: "Short answers to common questions about trading on Numo"
+---
+
+<AccordionGroup>
+  <Accordion title="What can I trade?">
+    `cNGN-USDC` spot, and a cash-settled cNGN future for each listed expiry, currently
+    `USDC-cNGN-30NOV26`. See [Market specs](/markets/market-specs).
+  </Accordion>
+
+  <Accordion title="What is cNGN?">
+    A naira stablecoin on Base. 1 cNGN redeems for 1 Nigerian naira.
+  </Accordion>
+
+  <Accordion title="Which way is each market quoted?">
+    Spot is quoted in USDC per cNGN, about `0.00073`, and sized in cNGN. The future is quoted in cNGN
+    per USDC, about `1380`, and sized in USDC of notional. A long future is long USDC and gains when
+    the naira weakens.
+  </Accordion>
+
+  <Accordion title="How do I open an account?">
+    Make a [deposit](/api-reference/endpoint/deposits) with `subaccount_id` `0`. The venue opens a
+    subaccount, funds it and pays the gas. See [Subaccounts](/subaccounts).
+  </Accordion>
+
+  <Accordion title="Do I pay gas?">
+    No. The venue submits deposits, withdrawals and fills on chain and pays the gas. For USDC, you can
+    also [sign a permit](/api-reference/endpoint/deposits#or-sign-a-permit-instead) instead of approving
+    on chain.
+  </Accordion>
+
+  <Accordion title="What can I use as collateral?">
+    USDC and cNGN. USDC counts at par. cNGN counts at half its value at the index. See
+    [Collateral](/collateral).
+  </Accordion>
+
+  <Accordion title="How much leverage can I use?">
+    Up to 4x on futures. Initial margin is 25% of notional, and maintenance margin is 15%. See
+    [Margin math](/risk/margin-math).
+  </Accordion>
+
+  <Accordion title="Is there a funding rate?">
+    No. The future is a dated contract. Gains and losses settle through
+    [variation margin](/futures#variation-margin), and the position closes out at expiry.
+  </Accordion>
+
+  <Accordion title="Why did I pay the taker fee on a resting order?">
+    The taker is the order created later, not the one that rested longer. Set `post_only` to make sure
+    you are always the maker. See [Fees](/matching/fees).
+  </Accordion>
+
+  <Accordion title="Why isn't my order filling?">
+    Common reasons:
+
+    - Its only counterparty is your own subaccount. See [Self-trade prevention](/matching/self-trade-prevention).
+    - Its `worst_fee` is lower than the fee. See [Fees](/matching/fees#the-worstfee-bound).
+    - On a future, the index is stale or the price is outside the [fill band](/futures#the-fill-band).
+    - On a future, your account is short of margin. See
+      [Pre-trade margin check](/risk/margin-math#pre-trade-margin-check).
+  </Accordion>
+
+  <Accordion title="Are there market orders?">
+    No. Every order is a limit order. To trade at once, price through the other side of the book. See
+    [Order types](/matching/order-types).
+  </Accordion>
+
+  <Accordion title="What happens if my account falls below maintenance margin?">
+    It can be liquidated through an on-chain auction. See [Liquidation](/risk/liquidation).
+  </Accordion>
+
+  <Accordion title="Can I trade from a hot key?">
+    Yes, for orders. Register a session key on chain. Deposits and withdrawals must be signed by the
+    owner. See [Session keys](/signing#session-keys).
+  </Accordion>
+
+  <Accordion title="Where do I find the API reference?">
+    In the **API** tab. To connect these docs to an AI tool, see [MCP server](/ai-tools/mcp).
+  </Accordion>
+</AccordionGroup>

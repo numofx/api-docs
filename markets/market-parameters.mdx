@@ -1,0 +1,73 @@
+---
+title: "Market parameters"
+description: "The risk and pricing parameters of the cNGN future, and where to read each on chain"
+---
+
+These are the parameters the chain enforces on the cNGN future. Each can change, so read the
+current value from its getter rather than hard-coding it.
+
+## Contracts
+
+| Contract | Address on Base |
+| --- | --- |
+| `FutureAsset` | `0xDCFa4Ee0772647aBd24E8592596b5fe4F001Bc19` |
+| MarginEngine | `0xA19E296021c9DF25b90D96C2A0793CC3D0800758` |
+| Index feed | `0xFaC420d160C7c219A72DC676971670980bAC20a5` |
+
+The series' `subId` is its expiry, `1796047200`. Its MarginEngine market ID is `1`.
+
+## Margin
+
+Read on the MarginEngine.
+
+| Parameter | Value | Getter |
+| --- | --- | --- |
+| Initial margin | 25% of notional | `futureMarginRequirements(1)` |
+| Maintenance margin | 15% of notional | `futureMarginRequirements(1)` |
+| cNGN collateral factor | Set on chain | `baseMarginParams(1)` |
+| Depeg penalty | Set on chain | `depegParams()` |
+
+See [Margin math](/risk/margin-math).
+
+## Mark and band
+
+Read on the `FutureAsset`. Fractions are 18-decimal: `0.05e18` is 5%.
+
+| Parameter | Value | Getter |
+| --- | --- | --- |
+| Contract size | 1,000 USDC | `contractSize()` |
+| Mark interval | 1 hour | `minMarkInterval()` |
+| Mark move limit | 5% | `maxMarkDeviation()` |
+| Index band, widest | 10% | `maxMarkIndexDeviation()` |
+| Index band, narrowest | 1% | `minMarkIndexDeviation()` |
+| Band narrowing period | 14 days | `bandNarrowingPeriod()` |
+| Current band | — | `markIndexBand(expiry)` |
+
+See [Mark price and bounds](/markets/mark-price-and-bounds).
+
+## Open interest
+
+Open interest is capped across both sides. Read the cap with `totalPositionCap(manager)` on the
+`FutureAsset`, passing the MarginEngine.
+
+## Settlement
+
+| Parameter | Value | Getter |
+| --- | --- | --- |
+| Fixing window | Last hour before expiry | `fixingWindow()` |
+| Max gap between samples | 15 minutes | `maxSampleGap()` |
+| Fallback delay | 24 hours after expiry | `fallbackDelay()` |
+| Fallback band | 2% | `FALLBACK_BAND()` |
+
+The settlement price is the time-weighted average of index samples over the fixing window. If a gap
+between samples is longer than 15 minutes, the fixing is incomplete. A fallback price can then be
+set after 24 hours, within 2% of the samples' average.
+
+## Index
+
+| Parameter | Value |
+| --- | --- |
+| Heartbeat | 20 minutes |
+| Max move per update | 1.5% |
+
+See [Index price](/markets/index-price).

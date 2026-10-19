@@ -1,0 +1,53 @@
+---
+title: "Impact pricing"
+description: "How the futures mark is priced from book depth, or from the index when the book is thin"
+---
+
+The futures mark follows what it would cost to trade a fixed size on the book, not the best bid
+and ask. This is the impact price. A single small order at the top of the book cannot move it.
+
+## Impact notional
+
+The impact notional is **2,000 USDC** on each side, or 2 contracts.
+
+For each side, the venue walks the book from the best price and takes the volume-weighted average
+price to fill 2,000 USDC:
+
+- **Impact bid:** the average price to sell 2,000 USDC of notional into the bids.
+- **Impact ask:** the average price to buy 2,000 USDC of notional from the asks.
+
+The book price is the midpoint of the two.
+
+## When the book is too thin
+
+If either side cannot fill 2,000 USDC, or the book is crossed, the venue uses the **carry forward**
+instead:
+
+```text
+carry forward = index × (1 + 11.8% × years to expiry)
+```
+
+Years to expiry is the seconds left until expiry divided by 365 × 86,400. The carry is simple
+interest.
+
+## Limits on the result
+
+Before it becomes the mark, the price is limited in this order:
+
+1. **Basis cap.** It is held within 3% of the carry forward. A one-sided book cannot pull the mark
+   far from fair value.
+2. **Index band.** It is held inside the [index band](/markets/mark-price-and-bounds#bounds).
+3. **Move limit.** It is held within 5% of the previous mark.
+
+The venue applies steps 2 and 3 with a small safety margin, so the chain always accepts the result.
+
+## Cadence
+
+The venue checks every minute and publishes once an hour, the most often the chain allows. It stops
+at `last_trade_time`.
+
+## What this means for you
+
+- **Depth moves the mark, not the top of book.** To move the mark, an order has to change the price
+  of trading 2,000 USDC.
+- **A thin book reverts to carry.** When liquidity is light, the mark tracks the index plus carry.

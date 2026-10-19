@@ -1,0 +1,42 @@
+---
+title: "Mark price and bounds"
+description: "Where the futures mark comes from, the limits on how it moves, and what it drives"
+---
+
+The mark price is the price the MarginEngine values a futures position at. It drives
+[variation margin](/futures#variation-margin), [margin](/risk/margin-math) and
+[liquidation](/risk/liquidation). Spot has no mark.
+
+## Where it comes from
+
+Each update, the venue computes a forward from the series' order book, or from the index when the
+book is too thin. See [Impact pricing](/markets/impact-pricing). It signs the forward into the
+forward feed, and the mark is pulled on chain from that feed. Anyone can trigger the pull.
+
+## Bounds
+
+The chain enforces three limits on every mark update:
+
+| Limit | Value | Getter on `FutureAsset` |
+| --- | --- | --- |
+| Frequency | At most once an hour | `minMarkInterval()` |
+| Move per update | At most 5% from the previous mark | `maxMarkDeviation()` |
+| Distance from the index | Inside the index band | `markIndexBand(expiry)` |
+
+The index band is 10% either side of the [index](/markets/index-price). Over the last 14 days before
+expiry it narrows linearly to 1%. The same band bounds every fill. See
+[The fill band](/futures#the-fill-band).
+
+If the book's price falls outside these limits, the mark moves as far toward it as they allow. If
+no mark can satisfy them, or the index is stale, the mark does not update.
+
+## Read it
+
+[`GET /v1/markets`](/api-reference/endpoint/get) reports `mark_price`, `index_price` and
+`band_width` for each series. [`GET /v1/positions`](/api-reference/endpoint/positions) reports
+`mark_price` and `mark_updated_at` on each position. The mark is quoted in cNGN per USDC.
+
+## At expiry
+
+The mark stops updating at `last_trade_time`. Positions close out at the settlement price, not the
+mark. See [Settlement](/futures#settlement).
