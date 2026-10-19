@@ -24,7 +24,7 @@
 - Trading accounts sit under the MarginEngine (`0xA19E296021c9DF25b90D96C2A0793CC3D0800758`). The
   perpetual (`cNGN-PERP`) is not documented; do not add it back.
 - `USDCcNGN-SPOT` is a deprecated alias, removed on 2027-01-06. Never use it in new docs or
-  examples. It appears only in the deprecation notes and the changelog.
+  examples. It appears only in the deprecation notes.
 
 ## Style preferences
 
