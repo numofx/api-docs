@@ -1487,7 +1487,7 @@
           },
           "notional_usdc": { "type": "string", "description": "|contracts| × the contract size (1,000 USDC).", "example": "2500" },
           "mark_price": { "type": "string", "description": "The series' mark, in cNGN per USDC. Once settled, the settlement price.", "example": "1378.831925759302576878" },
-          "mark_updated_at": { "type": "string", "format": "date-time", "description": "When the mark was set; once settled, when the series settled.", "example": "2026-10-19T08:33:27Z" },
+          "mark_updated_at": { "type": "string", "format": "date-time", "description": "When the mark was set; once settled, when the series settled.", "example": "2026-10-19T13:53:27Z" },
           "pending_vm_cngn": {
             "type": "string",
             "description": "Variation margin accrued since the account's last settlement and not yet paid into cash, in cNGN. Positive is owed to the account. Variation margin accrues at each mark and is realised at each settlement.",
