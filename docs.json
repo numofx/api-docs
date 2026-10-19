@@ -79,12 +79,6 @@
             ]
           },
           {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/mcp"
-            ]
-          },
-          {
             "group": "FAQ",
             "pages": [
               "faq"
@@ -131,6 +125,17 @@
             "group": "Execution service",
             "pages": [
               "api-reference/endpoint/webhook"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "cli/installation"
             ]
           }
         ]
