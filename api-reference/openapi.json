@@ -578,6 +578,42 @@
         }
       }
     },
+    "/v1/positions": {
+      "get": {
+        "tags": ["Markets service"],
+        "summary": "Get positions",
+        "operationId": "getPositions",
+        "description": "An account's futures positions in every listed series, and its margin under the MarginEngine, read from chain. Positions are public on chain, so no signature is needed. A futures field the venue could not read is left out, and the rest of the response is still served: treat an absent field as unknown, not as zero.",
+        "parameters": [
+          {
+            "name": "subaccount_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9]+$" },
+            "description": "The subaccount to read, as a decimal integer.",
+            "example": "15"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account's positions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PositionsResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "subaccount_id missing or not a non-negative integer",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/withdrawals": {
       "post": {
         "tags": ["Markets service"],
@@ -1407,6 +1443,67 @@
             "items": { "$ref": "#/components/schemas/IntegrationTrade" }
           },
           "next_before_trade_id": { "type": "integer", "description": "Pass as before_trade_id to fetch older trades. Absent on the last page." }
+        }
+      },
+      "PositionsResponse": {
+        "type": "object",
+        "required": ["futures", "positions", "accounts"],
+        "properties": {
+          "futures": {
+            "type": "array",
+            "description": "One entry per listed series the account holds. Empty when the account is flat in every series.",
+            "items": { "$ref": "#/components/schemas/FuturePosition" }
+          },
+          "futures_account": { "$ref": "#/components/schemas/FuturesAccount" },
+          "positions": {
+            "type": "array",
+            "description": "Reserved for markets this reference does not cover. Always present; empty for an account that holds none of them.",
+            "items": { "type": "object" }
+          },
+          "accounts": {
+            "type": "array",
+            "description": "Reserved for markets this reference does not cover. Always present.",
+            "items": { "type": "object" }
+          }
+        }
+      },
+      "FuturePosition": {
+        "type": "object",
+        "description": "An account's position in one futures series. Every field except market and sub_id is read from chain and is absent when that read failed: treat an absent field as unknown, not as zero. An entry without contracts is a series whose position could not be read.",
+        "required": ["market", "sub_id"],
+        "properties": {
+          "market": { "type": "string", "example": "USDC-cNGN-30NOV26" },
+          "sub_id": { "type": "string", "description": "The series' sub id: its expiry, in unix seconds.", "example": "1796047200" },
+          "status": {
+            "type": "string",
+            "enum": ["trading", "closing", "settled"],
+            "description": "trading before last_trade_time; closing after it until the settlement price is fixed; settled after that."
+          },
+          "contracts": { "type": "string", "description": "Signed contracts, up to 18 decimal places. Positive is a long.", "example": "-2.5" },
+          "side": {
+            "type": "string",
+            "enum": ["long", "short"],
+            "description": "long is long USDC: it gains when the naira weakens and the price, in cNGN per USDC, rises."
+          },
+          "notional_usdc": { "type": "string", "description": "|contracts| × the contract size (1,000 USDC).", "example": "2500" },
+          "mark_price": { "type": "string", "description": "The series' mark, in cNGN per USDC. Once settled, the settlement price.", "example": "1378.831925759302576878" },
+          "mark_updated_at": { "type": "string", "format": "date-time", "description": "When the mark was set; once settled, when the series settled.", "example": "2026-10-19T08:33:27Z" },
+          "pending_vm_cngn": {
+            "type": "string",
+            "description": "Variation margin accrued since the account's last settlement and not yet paid into cash, in cNGN. Positive is owed to the account. Variation margin accrues at each mark and is realised at each settlement.",
+            "example": "-125000"
+          }
+        }
+      },
+      "FuturesAccount": {
+        "type": "object",
+        "description": "The account's margin under the MarginEngine. It covers every series and the cNGN the account holds, so it is reported once, not per position. Absent when the account is under another manager. A surplus the venue could not read is left out.",
+        "required": ["subaccount_id", "manager"],
+        "properties": {
+          "subaccount_id": { "type": "string", "example": "15" },
+          "manager": { "type": "string", "description": "The MarginEngine.", "example": "0xa19e296021c9df25b90d96c2a0793cc3d0800758" },
+          "im_surplus_usd": { "type": "string", "description": "Initial-margin surplus in USD. Below zero, the account cannot open or add to a position.", "example": "500" },
+          "mm_surplus_usd": { "type": "string", "description": "Maintenance-margin surplus in USD. Below zero, the account is liquidated.", "example": "800" }
         }
       },
       "ErrorResponse": {
