@@ -173,7 +173,7 @@ These are the most common rejections, and they almost always mean the body was s
 These apply to `cNGN-USDC`. Both fields are optional — omit them and your
 raw engine values are used as sent. Send either one and the rules below apply. Since the cNGN-USDC
 orientation the translation is the identity: the engine order is the `ui_intent`, with the price in
-USDC per cNGN and the size in cNGN. See the [Spot market](/spot) guide for the units involved.
+USDC per cNGN and the size in cNGN. See the [Spot](/spot) guide for the units involved.
 
 <ParamField body={'order_entry_spec must be "cngn_usdc_spot_v1" for this market\'s ui_intent'} type="400">
   You sent `ui_intent` without `order_entry_spec`, or with a spec that is not this market's own.
