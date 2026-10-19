@@ -1447,6 +1447,7 @@
       },
       "PositionsResponse": {
         "type": "object",
+        "description": "Read futures and futures_account. Other keys are reserved: they may be absent, and further keys may appear, for example when another section of the response could not be read. A failure there does not affect futures or futures_account.",
         "required": ["futures"],
         "properties": {
           "futures": {
@@ -1457,18 +1458,13 @@
           "futures_account": { "$ref": "#/components/schemas/FuturesAccount" },
           "positions": {
             "type": "array",
-            "description": "Reserved for markets this reference does not cover. Empty for an account that holds none of them; absent when they could not be read (see perp_error). Absent is unknown, not empty.",
+            "description": "Reserved. Not part of the documented response; it may be absent.",
             "items": { "type": "object" }
           },
           "accounts": {
             "type": "array",
-            "description": "Reserved for markets this reference does not cover. Absent when they could not be read (see perp_error).",
+            "description": "Reserved. Not part of the documented response; it may be absent.",
             "items": { "type": "object" }
-          },
-          "perp_error": {
-            "type": "string",
-            "description": "Present only when positions and accounts could not be read, and why. The futures are read independently and are still served.",
-            "example": "could not read positions from chain"
           }
         }
       },
