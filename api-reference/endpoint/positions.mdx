@@ -1,0 +1,38 @@
+---
+title: 'Get positions'
+openapi: 'GET /v1/positions'
+---
+
+Returns an account's futures positions in every listed series, and its margin under the
+MarginEngine, read from chain. No authentication is needed, because positions are public on chain.
+
+## Reading a position
+
+Each entry under `futures` is one series the account holds. A series it is flat in is not listed.
+
+- `contracts` is signed; `side` is `long` when it is positive. A long is long USDC, and gains when
+  the naira weakens.
+- `notional_usdc` is the size in USDC: |`contracts`| × 1,000.
+- `status` is `trading` before `last_trade_time`, `closing` from then until the settlement price is
+  fixed, and `settled` after. A closing series still holds its position.
+- `mark_price` is the series' mark in cNGN per USDC, and `mark_updated_at` is when it was set.
+
+## Pending variation margin
+
+Variation margin accrues at each mark and is realised into cash at each settlement.
+`pending_vm_cngn` is what has accrued since the account was last settled, in cNGN, positive when
+owed to you. It runs from each fill's own price, so it is not simply the mark's move × your
+position. See [Variation margin](/futures#variation-margin).
+
+## Margin
+
+Margin covers the whole account, including every series and the cNGN it holds, so it is reported
+once, under `futures_account`, as `im_surplus_usd` and `mm_surplus_usd`. Below zero on initial
+margin, the account cannot open or add to a position. Below zero on maintenance margin, the account
+is liquidated. `futures_account` is absent for an account under another manager.
+
+## Unreadable fields
+
+A value the venue could not read from chain is left out, and the rest of the response is still
+served. Treat an absent field as unknown, not as zero. An entry without `contracts` is a series
+whose position could not be read.

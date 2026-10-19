@@ -3,6 +3,17 @@ title: "Changelog"
 description: "Changes to the Numo API, newest first"
 ---
 
+<Update label="2026-10-19" description="Futures positions on the API">
+  **`GET /v1/positions` serves futures positions.** Pass `subaccount_id`; no signature is needed.
+  `futures` lists the account's position in every listed series it holds: `market`, `sub_id`,
+  `status` (`trading`, `closing` or `settled`), signed `contracts`, `side`, `notional_usdc`,
+  `mark_price` and `mark_updated_at`, and `pending_vm_cngn`, the variation margin accrued since the
+  account was last settled. `futures_account` gives the account's MarginEngine margin once, as
+  `im_surplus_usd` and `mm_surplus_usd`. A value the venue could not read is left out rather than
+  shown as zero. See [Get positions](/api-reference/endpoint/positions) and
+  [Futures market](/futures#read-a-position).
+</Update>
+
 <Update label="2026-10-16" description="cNGN futures and the MarginEngine">
   **Trading accounts are under the MarginEngine.** `margin_manager_address` on `cNGN-USDC` is now the
   MarginEngine, `0xA19E296021c9DF25b90D96C2A0793CC3D0800758`, which went live on 2026-10-13. `POST /v1/deposits`
