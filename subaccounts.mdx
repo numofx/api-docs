@@ -1,0 +1,60 @@
+---
+title: "Subaccounts"
+description: "Open, use and read the trading accounts that hold your collateral and positions"
+---
+
+A subaccount is a trading account under the MarginEngine. It holds your [collateral](/collateral)
+and your positions. Its id is the `subaccount_id` you put on every order, deposit and withdrawal.
+
+One subaccount trades both `cNGN-USDC` spot and the cNGN [futures](/futures). Margin covers the
+whole subaccount, across every series and the cNGN it holds.
+
+## Open a subaccount
+
+Post a deposit to [`POST /v1/deposits`](/api-reference/endpoint/deposits) with `subaccount_id` `0`.
+The venue opens the subaccount, funds it and pays the gas. The response's `subaccount_id` is your
+new subaccount.
+
+To top up a subaccount you already have, send its id instead of `0`.
+
+## Ownership
+
+Matching holds every subaccount and records its owner: the `owner` of the deposit that opened it.
+Only the owner can deposit to it or withdraw from it, and withdrawals are paid to the owner.
+
+A withdrawal lends the subaccount to the WithdrawalModule for the call. The subaccount stays in
+Matching, so trading from it is not interrupted.
+
+## Trade from a session key
+
+For orders, you can sign with a session key instead of the owner key. Register it on chain with
+`registerSessionKey(address toAllow, uint expiry)`. Matching then accepts that signer for all the
+owner's subaccounts until `expiry`. See [Session keys](/signing#session-keys).
+
+Deposits and withdrawals must be signed by the owner. Session keys are not supported for them.
+
+## Use a subaccount on an order
+
+Set `subaccount_id` in the request body and `subaccountId` in the signed `Action` to the same id.
+A mismatch is refused. See [Order errors and validation](/errors#field-consistency).
+
+## Read a subaccount
+
+[`GET /v1/positions?subaccount_id=N`](/api-reference/endpoint/positions) returns the subaccount's
+futures positions and its margin surplus, read from chain. No signature is needed, because
+positions are public on chain.
+
+## Accounts opened before the cutover
+
+A subaccount opened before the 2026-10-04 cutover may still hold balances in the retired wrapped
+assets. You can still withdraw them. See
+[Create a withdrawal](/api-reference/endpoint/withdrawals#signing-the-action).
+
+## Contract addresses
+
+| Contract | Address on Base |
+| --- | --- |
+| MarginEngine | `0xA19E296021c9DF25b90D96C2A0793CC3D0800758` |
+| `Matching` | `0x9E90A9cD13d859Bd6a08168082FB1F6F7405F191` |
+| DepositModule | `0x6540f8d9Eb599b045C05E45cb6a5B1730a806658` |
+| WithdrawalModule | `0x0a10AE2f5D2482cE1e43bC309D430B8861C2b5aB` |

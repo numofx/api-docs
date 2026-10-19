@@ -1,0 +1,63 @@
+---
+title: "Collateral"
+description: "What a trading account can hold, and how each asset counts toward margin"
+---
+
+A trading account holds two assets: USDC and cNGN. Both back spot orders and futures margin in the
+same account. No other asset is accepted.
+
+## Accepted assets
+
+Each token is held in a wrapped asset under the MarginEngine. You deposit and withdraw the token,
+but the action's `asset` field names the wrapped asset.
+
+| Token | Token address on Base | Wrapped `asset` | Minimum deposit |
+| --- | --- | --- | --- |
+| USDC | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` | cash asset, `0xA74E49b4Ed7cb176bc02ef4D8a1A3240C9aD4272` | 10 USDC |
+| cNGN | `0x46C85152bFe9f96829aA94755D9f915F9B10EF5F` | cNGN escrow, `0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98` | 15,000 cNGN |
+
+[`GET /v1/markets`](/api-reference/endpoint/get) reports the cash asset as `quote_asset_address`, and the
+cNGN escrow as the `asset_address` of `cNGN-USDC`.
+
+## Decimals
+
+You send amounts in the token's **6-decimal base units**: `1000000000` is 1,000 USDC, or 1,000 cNGN.
+The account is credited at 18 decimals, so 1,000 USDC appears on chain as
+`1000000000000000000000` of cash.
+
+## How collateral counts toward margin
+
+- **USDC** counts at par.
+- **cNGN** counts at its base margin factor (`0.5`), valued at the index.
+- While cNGN trades below its depeg threshold, the MarginEngine adds a penalty to initial margin.
+
+All cNGN under the MarginEngine shares one cap, set on chain. A deposit that would cross it is
+refused with a **400** that says how much room is left.
+
+See [Margin](/futures#margin) for the initial and maintenance requirements on futures.
+
+## Variation margin
+
+Futures variation margin settles in cNGN. A payer pays from its cNGN first, then the rest from USDC
+at the index. A winner is paid in cNGN while the engine's pool holds it, then in USDC. See
+[Variation margin](/futures#variation-margin).
+
+## Issuer controls
+
+USDC and cNGN issuers can freeze wallets and pause their tokens.
+
+- If an issuer has frozen your wallet, deposits and withdrawals of that token are refused with a
+  **400** that says so.
+- If an issuer has paused the token, or frozen a venue contract, deposits and withdrawals of that
+  token are suspended for everyone with a **503**.
+
+## Move collateral in and out
+
+<CardGroup cols={2}>
+  <Card title="Create a deposit" icon="arrow-down-to-line" href="/api-reference/endpoint/deposits">
+    Open an account and fund it, or top it up. The venue pays the gas.
+  </Card>
+  <Card title="Create a withdrawal" icon="arrow-up-from-line" href="/api-reference/endpoint/withdrawals">
+    Withdraw to the account's owner without interrupting trading.
+  </Card>
+</CardGroup>
