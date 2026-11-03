@@ -77,7 +77,7 @@ In `data`:
   No other asset is accepted.
 * `amount` is in the **token's 6-decimal base units**: `1000000000` is 1,000 USDC, or 1,000 cNGN. It must be
   explicit — the "whole balance" sentinel `type(uint256).max` is refused — and at least the minimum above.
-* `managerForNewAccount` is the MarginEngine, `0xA19E296021c9DF25b90D96C2A0793CC3D0800758` (`margin_manager_address` on
+* `managerForNewAccount` is the MarginEngine, `0x0705219a1594d5Fc5dC2573da4082cAf3e1B0950` (`margin_manager_address` on
   `GET /v1/markets`). For a top-up it is ignored; send the same address or zero.
 
 The account is credited at 18 decimals, so 1,000 USDC appears on chain as `1000000000000000000000` of cash, and 1,000
@@ -94,7 +94,7 @@ Send the action's seven fields as strings (numbers in base 10, `data` as hex) wi
     "subaccount_id": "0",
     "nonce": "7",
     "module": "0x6540f8d9Eb599b045C05E45cb6a5B1730a806658",
-    "data": "0x000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000a74e49b4ed7cb176bc02ef4d8a1a3240c9ad4272000000000000000000000000a19e296021c9df25b90d96c2a0793cc3d0800758",
+    "data": "0x000000000000000000000000000000000000000000000000000000003b9aca00000000000000000000000000a74e49b4ed7cb176bc02ef4d8a1a3240c9ad42720000000000000000000000000705219a1594d5fc5dc2573da4082caf3e1b0950",
     "expiry": "1789400600",
     "owner": "0xYourAddress",
     "signer": "0xYourAddress"

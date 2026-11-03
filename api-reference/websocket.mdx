@@ -79,7 +79,7 @@ Send these as JSON text frames. The `op` field selects the operation.
 </ParamField>
 
 <ParamField body="market" type="string">
-  Market identifier such as `cNGN-USDC` or `USDC-cNGN-30NOV26`, or an `asset_address:sub_id` pair.
+  Market identifier such as `cNGN-USDC` or `cNGN-30NOV26`, or an `asset_address:sub_id` pair.
   Required for `book` and `trades`. Optional for `orders`, where it scopes the stream to a
   single market. The deprecated `USDCcNGN-SPOT` is accepted until
   2027-01-06; whichever identifier you subscribe with, every frame names the market by its
@@ -162,9 +162,9 @@ The `data` on an `update` frame is a compact delta, not the whole book.
 ```json book
 {
   "side": "buy",
-  "price_ticks": "1390",
-  "limit_price": "1390",
-  "size_delta": "-0.001",
+  "price_ticks": "720000000000000",
+  "limit_price": "0.00072",
+  "size_delta": "-1000",
   "order_open": "0",
   "order_id": "…"
 }
@@ -173,8 +173,8 @@ The `data` on an `update` frame is a compact delta, not the whole book.
 ```json trades
 {
   "trade_id": 4821,
-  "price": "1390",
-  "size": "0.001",
+  "price": "0.00072",
+  "size": "1000",
   "aggressor_side": "buy",
   "taker_order_id": "…",
   "maker_order_id": "…",
@@ -187,10 +187,10 @@ The `data` on an `update` frame is a compact delta, not the whole book.
   "order_id": "…",
   "status": "filled",
   "side": "sell",
-  "filled_amount": "0.001",
-  "desired_amount": "0.001",
-  "limit_price": "1390",
-  "price_ticks": "1390"
+  "filled_amount": "1000",
+  "desired_amount": "1000",
+  "limit_price": "0.00072",
+  "price_ticks": "720000000000000"
 }
 ```
 

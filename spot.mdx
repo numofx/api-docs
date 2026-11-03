@@ -222,7 +222,7 @@ Two details that decide the number:
   against it, so the correct bound is `feeRate x price`, and it changes with price. A single
   configured constant is right at exactly one price.
 - **Leave headroom above the published schedule.** Orders already resting were signed under the
-  old number, and they cannot be re-signed atomically with a fee change. Our own clients sign 30
-  bps, above every market's schedule, for this reason.
+  old number, and they cannot be re-signed atomically with a fee change. Our own clients sign 5 bps
+  above each market's schedule for this reason.
 
 See [Authentication and signing](/signing) for how to compute and encode it.

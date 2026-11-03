@@ -44,13 +44,15 @@ Trading resumes as soon as the index updates.
 
 ## Direction
 
-On chain, the index feed is in USDC per cNGN, with 18 decimals. The futures market quotes cNGN per
-USDC, so `index_price` on `GET /v1/markets` is the inverse.
+On chain, the index feed is in USDC per cNGN, with 18 decimals. `cNGN-30NOV26` quotes the same way, so
+`index_price` on `GET /v1/markets` is the feed's value as is. The retired `USDC-cNGN-30NOV26` quotes
+cNGN per USDC, so its `index_price` is the inverse.
 
 | Where | Unit | Example |
 | --- | --- | --- |
 | Index feed on chain | USDC per cNGN | `0.000725` |
-| `index_price` on a future | cNGN per USDC | `1380` |
+| `index_price` on `cNGN-30NOV26` | USDC per cNGN | `0.000725` |
+| `index_price` on `USDC-cNGN-30NOV26` | cNGN per USDC | `1380` |
 
 The index feed is `0xFaC420d160C7c219A72DC676971670980bAC20a5` on Base.
 

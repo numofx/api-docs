@@ -14,16 +14,17 @@ There is one surplus for initial margin (IM) and one for maintenance margin (MM)
 
 ## Position requirement
 
-Each futures position requires a share of its USDC notional:
+Each futures position requires a share of its notional at the mark, which moves with the price:
 
 ```text
-requirement = |contracts| × 1,000 USDC × rate
+requirement = |contracts| × contract size × mark × rate
 ```
 
-| | Rate |
-| --- | --- |
-| Initial margin | 25%, plus the depeg penalty |
-| Maintenance margin | 15% |
+| | `cNGN-30NOV26` | `EURC-30NOV26` |
+| --- | --- | --- |
+| Contract size | 1,000,000 cNGN | 1,000 EURC |
+| Initial margin | 25%, plus the depeg penalty | 6% |
+| Maintenance margin | 15% | 4% |
 
 Requirements are **gross**. A long in one series does not offset a short in another.
 
@@ -31,8 +32,7 @@ Requirements are **gross**. A long in one series does not offset a short in anot
 
 - **USDC** counts at par.
 - **cNGN** counts at `cNGN held × index × 0.5`. The `0.5` is cNGN's base margin factor.
-- **Pending variation margin** owed to you counts at cNGN's margin factor. Pending VM you owe is
-  taken from your cNGN at the factor first, then from USDC at par.
+- **Pending variation margin** is USDC, and counts at par whether it is owed to you or by you.
 
 ## Depeg penalty
 
@@ -46,14 +46,16 @@ The penalty applies to initial margin only. The threshold and factor are set on 
 
 ## Worked example
 
-You hold 2,000 USDC and no cNGN, and buy 4 contracts. Notional is 4,000 USDC.
+You hold 2,000 USDC and no cNGN, and buy 4 contracts of `cNGN-30NOV26` with the mark at 0.00072.
+Notional is 4 × 1,000,000 × 0.00072 = 2,880 USDC.
 
 | | IM | MM |
 | --- | --- | --- |
-| Requirement | 4,000 × 25% = 1,000 | 4,000 × 15% = 600 |
-| Surplus | 2,000 − 1,000 = 1,000 | 2,000 − 600 = 1,400 |
+| Requirement | 2,880 × 25% = 720 | 2,880 × 15% = 432 |
+| Surplus | 2,000 − 720 = 1,280 | 2,000 − 432 = 1,568 |
 
-Fees and variation margin change the cash side as you trade. At 25% IM, leverage is capped at 4x.
+Fees and variation margin change the cash side as you trade, and the requirement moves with the
+mark. At 25% IM, leverage on `cNGN-30NOV26` is capped at 4x.
 
 ## Reducing risk
 

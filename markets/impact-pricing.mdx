@@ -8,7 +8,8 @@ and ask. This is the impact price. A single small order at the top of the book c
 
 ## Impact notional
 
-The impact notional is **2,000 USDC** on each side, or 2 contracts.
+The impact notional is **2,000 USDC** on each side. At 0.00072 USDC per cNGN that is about 2.8 contracts of
+`cNGN-30NOV26`.
 
 For each side, the venue walks the book from the best price and takes the volume-weighted average
 price to fill 2,000 USDC:
@@ -24,11 +25,11 @@ If either side cannot fill 2,000 USDC, or the book is crossed, the venue uses th
 instead:
 
 ```text
-carry forward = index × (1 + 11.8% × years to expiry)
+carry forward = index / (1 + 11.8% × years to expiry)
 ```
 
 Years to expiry is the seconds left until expiry divided by 365 × 86,400. The carry is simple
-interest.
+interest. Priced in USDC per cNGN, the forward sits at a discount to the index.
 
 ## Limits on the result
 
@@ -50,4 +51,4 @@ at `last_trade_time`.
 
 - **Depth moves the mark, not the top of book.** To move the mark, an order has to change the price
   of trading 2,000 USDC.
-- **A thin book reverts to carry.** When liquidity is light, the mark tracks the index plus carry.
+- **A thin book reverts to carry.** When liquidity is light, the mark tracks the index less carry.
