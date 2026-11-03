@@ -26,13 +26,13 @@ Numo's orderbook is split across four layers:
 
 <Steps>
   <Step title="1. Market discovery">
-    Clients call `GET /v1/markets` on `markets-service` to discover enabled instruments and retrieve the canonical `asset_address` and `sub_id`.
+    Clients call `GET /markets` on `markets-service` to discover enabled instruments and retrieve the canonical `asset_address` and `sub_id`.
   </Step>
   <Step title="2. Orderbook reads">
-    Clients poll `GET /v1/book` and `GET /v1/trades` on `markets-service` for top-of-book state, recent prints, and 24h stats.
+    Clients poll `GET /book` and `GET /trades` on `markets-service` for top-of-book state, recent prints, and 24h stats.
   </Step>
   <Step title="3. Signed order submission">
-    Clients submit signed order payloads to `POST /v1/orders`. The service validates that order metadata matches the embedded action payload before persisting the order.
+    Clients submit signed order payloads to `POST /orders`. The service validates that order metadata matches the embedded action payload before persisting the order.
   </Step>
   <Step title="4. Matching">
     The matcher loop in `markets-service` scans for crossed orders, computes fill amounts, and builds an executor payload for the market.
@@ -65,8 +65,8 @@ The settlement note in the matcher registry is:
 ### `markets-service`
 
 - stores active orders and trade fills
-- exposes `GET /v1/markets`, `GET /v1/book`, `GET /v1/trades`
-- accepts `POST /v1/orders` and `POST /v1/orders/cancel`
+- exposes `GET /markets`, `GET /book`, `GET /trades`
+- accepts `POST /orders` and `POST /orders/cancel`
 - resolves market metadata from exact `(asset_address, sub_id)`
 
 ### `execution-service`

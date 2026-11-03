@@ -11,7 +11,7 @@ whole subaccount, across every series and the cNGN it holds.
 
 ## Open a subaccount
 
-Post a deposit to [`POST /v1/deposits`](/api-reference/endpoint/deposits) with `subaccount_id` `0`.
+Post a deposit to [`POST /deposits`](/api-reference/endpoint/deposits) with `subaccount_id` `0`.
 The venue opens the subaccount, funds it and pays the gas. The response's `subaccount_id` is your
 new subaccount.
 
@@ -41,7 +41,7 @@ A mismatch is refused. See [Order errors and validation](/errors#field-consisten
 
 ## Read a subaccount
 
-[`GET /v1/positions?subaccount_id=N`](/api-reference/endpoint/positions) returns the subaccount's
+[`GET /positions?subaccount_id=N`](/api-reference/endpoint/positions) returns the subaccount's
 futures positions and its margin surplus, read from chain. No signature is needed, because
 positions are public on chain.
 
@@ -51,7 +51,7 @@ A subaccount stays under the MarginEngine it was opened under, and there is no w
 opened under the first engine, `0xA19E296021c9DF25b90D96C2A0793CC3D0800758`, cannot hold the current
 futures. To move, open a new subaccount with a [deposit](/api-reference/endpoint/deposits), and withdraw
 from the old one. Read an account's engine as `futures_account.manager` on
-[`GET /v1/positions`](/api-reference/endpoint/positions).
+[`GET /positions`](/api-reference/endpoint/positions).
 
 ## Accounts opened before the cutover
 

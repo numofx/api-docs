@@ -10,15 +10,15 @@ title: "Markets service"
 The service exposes these core routes:
 
 - `GET /healthz`
-- `GET /v1/markets`
-- `GET /v1/book`
-- `GET /v1/trades`
-- `POST /v1/orders`
-- `POST /v1/orders/cancel`
+- `GET /markets`
+- `GET /book`
+- `GET /trades`
+- `POST /orders`
+- `POST /orders/cancel`
 
 ## Market discovery
 
-Use `GET /v1/markets` before you submit anything. The response contains the canonical metadata you need for order entry:
+Use `GET /markets` before you submit anything. The response contains the canonical metadata you need for order entry:
 
 - `market`
 - `asset_address`
@@ -33,7 +33,7 @@ Use `GET /v1/markets` before you submit anything. The response contains the cano
 
 ## Reading the book
 
-`GET /v1/book` accepts either:
+`GET /book` accepts either:
 
 - `symbol=cNGN-USDC`, or
 - `asset_address=0x...&sub_id=0`
@@ -48,7 +48,7 @@ The matcher currently returns the top 25 levels on each side.
 
 ## Reading trade history
 
-`GET /v1/trades` supports:
+`GET /trades` supports:
 
 - `symbol`
 - `asset_address`
@@ -72,7 +72,7 @@ For the fills on your own orders, with the fee paid and the settling transaction
 
 ## Submitting an order
 
-`POST /v1/orders` persists a signed order after validating the embedded action payload.
+`POST /orders` persists a signed order after validating the embedded action payload.
 
 Required fields include:
 
@@ -96,7 +96,7 @@ The service rejects the order if the order metadata and `action_json` disagree o
 
 ## Cancelling an order
 
-Use `POST /v1/orders/cancel` with:
+Use `POST /orders/cancel` with:
 
 - `owner_address`
 - `nonce`

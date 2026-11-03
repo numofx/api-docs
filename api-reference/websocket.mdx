@@ -5,12 +5,12 @@ description: "Real-time book, trades, and order streams from markets-service ove
 
 ## Overview
 
-`markets-service` exposes a realtime feed at `GET /v1/ws`. Connect once and multiplex any
+`markets-service` exposes a realtime feed at `GET /ws`. Connect once and multiplex any
 number of channel subscriptions over the same socket. Every stream starts with a snapshot and
-then delivers incremental updates, so you never poll `GET /v1/book` or `GET /v1/trades` in a
+then delivers incremental updates, so you never poll `GET /book` or `GET /trades` in a
 loop.
 
-- **Endpoint** — `wss://api.numofx.com/v1/ws`
+- **Endpoint** — `wss://api.numofx.com/ws`
 - **Framing** — JSON text frames
 - **Model** — snapshot, then a strictly increasing stream of deltas you can resume after a
   reconnect
@@ -53,8 +53,8 @@ That has a few consequences worth designing for:
 
 | Channel | Access | Snapshot | Updates |
 | --- | --- | --- | --- |
-| `book` | Public | Top bids and asks (mirrors `GET /v1/book`) | Price-level size changes |
-| `trades` | Public | Recent fills (mirrors `GET /v1/trades`) | One frame per new fill |
+| `book` | Public | Top bids and asks (mirrors `GET /book`) | Price-level size changes |
+| `trades` | Public | Recent fills (mirrors `GET /trades`) | One frame per new fill |
 | `orders` | **Private** — requires auth | Your open orders | Status and fill changes for your address |
 
 The `orders` channel is scoped to the authenticated owner address. You must send a valid
@@ -197,7 +197,7 @@ The `data` on an `update` frame is a compact delta, not the whole book.
 </CodeGroup>
 
 The `snapshot` payload mirrors the matching REST response: `book` snapshots use the same shape
-as `GET /v1/book`, and `trades` snapshots use the trade list from `GET /v1/trades`.
+as `GET /book`, and `trades` snapshots use the trade list from `GET /trades`.
 
 ## Subscribe and snapshot consistency
 

@@ -1,6 +1,6 @@
 ---
 title: "Authentication and signing"
-description: "Build and sign the EIP-712 action payload that POST /v1/orders requires"
+description: "Build and sign the EIP-712 action payload that POST /orders requires"
 ---
 
 Numo has no API keys. Every order is authenticated by an EIP-712 signature over an `Action`
@@ -111,7 +111,7 @@ never matches.
 
 - **`action_json.data`** carries the raw onchain values in **wei** — the numbers the contracts
   settle on.
-  `desiredAmount` is the size × the market's `amount_scale` from `GET /v1/markets`: 1e18 on spot, 1e15
+  `desiredAmount` is the size × the market's `amount_scale` from `GET /markets`: 1e18 on spot, 1e15
   on a [future](/futures#place-an-order).
 - **The order body** carries **human decimal** values. `markets-service` normalizes them
   itself: the price is divided by the instrument's tick size, and the amount by its minimum
@@ -133,22 +133,22 @@ import { encodeAbiParameters, formatUnits, parseAbiParameters } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 const MATCHING = '0x9E90A9cD13d859Bd6a08168082FB1F6F7405F191'
-const TRADE_MODULE = '0xDea968188598BA0E3F58A56C0fdfF338C74F699f' // trade_module_address from GET /v1/markets
+const TRADE_MODULE = '0xDea968188598BA0E3F58A56C0fdfF338C74F699f' // trade_module_address from GET /markets
 
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
 
 // A cNGN-USDC buy of 1,000 cNGN at 0.00073 USDC per cNGN.
-const asset = '0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98'      // asset_address from GET /v1/markets
-const subId = 0n                       // sub_id from GET /v1/markets
+const asset = '0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98'      // asset_address from GET /markets
+const subId = 0n                       // sub_id from GET /markets
 const limitPrice = 730000000000000n    // 0.00073 x 1e18
 const desiredAmount = 1000000000000000000000n // 1000 x 1e18
 // The most this fill may charge you, PER UNIT FILLED -- the contract compares
 // fee / amountFilled against it and reverts TM_FeeTooHigh rather than filling.
 //
-// Derive it from the market's taker_fee_bps (GET /v1/markets) and this order's price, with a
+// Derive it from the market's taker_fee_bps (GET /markets) and this order's price, with a
 // little headroom. 0 is correct ONLY on a market that charges nothing: whoever arrives second is
 // the taker, so a zero bound on a fee-charging market reverts every fill you take.
-const takerFeeBps = 15n        // from GET /v1/markets
+const takerFeeBps = 15n        // from GET /markets
 const headroomBps = 5n         // so a schedule change does not brick orders already resting
 const worstFee = (limitPrice * (takerFeeBps + headroomBps)) / 10000n
 const recipientId = 10n
@@ -197,7 +197,7 @@ const signature = await account.signTypedData({
 Then post the same values, with `action_json` mirroring the struct you signed:
 
 ```ts
-await fetch(`${MARKETS_SERVICE_URL}/v1/orders`, {
+await fetch(`${MARKETS_SERVICE_URL}/orders`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -283,7 +283,7 @@ ERC-1271.
 
 ## Cancel an order
 
-`POST /v1/orders/cancel` takes the order's `owner_address` and `nonce`, signed by the owner with the
+`POST /orders/cancel` takes the order's `owner_address` and `nonce`, signed by the owner with the
 same `Matching` domain:
 
 ```solidity
@@ -311,7 +311,7 @@ const cancelSignature = await account.signTypedData({
   message: { owner: account.address, signer: account.address, nonce: 1n, expiry },
 })
 
-await fetch(`${MARKETS_SERVICE_URL}/v1/orders/cancel`, {
+await fetch(`${MARKETS_SERVICE_URL}/orders/cancel`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -339,5 +339,5 @@ await fetch(`${MARKETS_SERVICE_URL}/v1/orders/cancel`, {
 | Base Sepolia | 84532    | `0x1599636347FD5bA1fBE21D58AfE0b8B9cbe283FF` | `0x0AAE65AaA66Fe7f54486cDbD007956d3De611990` |
 
 <Card title="Create order" icon="paper-plane" href="/api-reference/endpoint/create">
-  Submit the signed order to `POST /v1/orders`.
+  Submit the signed order to `POST /orders`.
 </Card>

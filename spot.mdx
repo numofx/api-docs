@@ -16,7 +16,7 @@ book, in trades, in candles, and in the `ui_intent` you submit — is **USDC per
     pass as `symbol`, `market` and `ticker_id`, matching `display_name`. The old
     `USDCcNGN-SPOT` remains a deprecated alias until 2027-01-06 (see the note
     under [Discover the market](#discover-the-market)).
-  - If you read `/v1/integrations/tickers`, `/orderbook` or `/trades`: `base_currency` is now `cNGN`
+  - If you read `/integrations/tickers`, `/orderbook` or `/trades`: `base_currency` is now `cNGN`
     and `target_currency` `USDC`. Prices are USDC per cNGN, `base_volume` and book quantities are
     cNGN, `target_volume` is USDC. A `buy` is a buy of cNGN.
   - If you submit `ui_intent`: send `order_entry_spec: "cngn_usdc_spot_v1"`, a price in USDC per
@@ -33,7 +33,7 @@ book, in trades, in candles, and in the `ui_intent` you submit — is **USDC per
 ## Discover the market
 
 ```bash
-curl "https://api.numofx.com/v1/markets"
+curl "https://api.numofx.com/markets"
 ```
 
 Look for:
@@ -58,7 +58,7 @@ symbol is stable; the address pair can change between deployments.
 ## Read the current price
 
 ```bash
-curl "https://api.numofx.com/v1/book?symbol=cNGN-USDC"
+curl "https://api.numofx.com/book?symbol=cNGN-USDC"
 ```
 
 Every order in the response carries a `spot_contract` object that restates it at the scales a
@@ -92,7 +92,7 @@ parser; they never disagree.
   is always USDC per cNGN.
 </Warning>
 
-`GET /v1/markets` publishes the contract inline on the spot entry, so you can assert it at runtime
+`GET /markets` publishes the contract inline on the spot entry, so you can assert it at runtime
 rather than hardcoding it:
 
 | Field | Value |
@@ -122,7 +122,7 @@ Each order also carries `spot_contract.ui_intent.side`, which is the same value 
 A mid price:
 
 ```bash
-curl -s "https://api.numofx.com/v1/book?symbol=cNGN-USDC" | python3 -c '
+curl -s "https://api.numofx.com/book?symbol=cNGN-USDC" | python3 -c '
 import json, sys
 book = json.load(sys.stdin)
 bid = float(book["bids"][0]["spot_contract"]["ui_intent"]["price"])
@@ -135,7 +135,7 @@ print(f"mid  {mid:.7f} USDC per cNGN  ({1 / mid:.2f} cNGN per USDC)")'
 
 ## Prefer the book over the last trade
 
-`GET /v1/trades` returns the most recent fills, each with its own `spot_contract`. That is the right
+`GET /trades` returns the most recent fills, each with its own `spot_contract`. That is the right
 source for a "last traded at" display, and every trade carries `created_at` so you can show its age.
 
 It is the wrong source for a current rate. In a quiet period the last fill can be hours or days old,
@@ -150,7 +150,7 @@ identical. The book quotes continuously, so a mid price stays current even when 
 ## Candles and 24h stats
 
 ```bash
-curl "https://api.numofx.com/v1/candles?symbol=cNGN-USDC&interval=1h&limit=200"
+curl "https://api.numofx.com/candles?symbol=cNGN-USDC&interval=1h&limit=200"
 ```
 
 Candle prices and `stats_24h` are raw engine values with no `spot_contract` wrapper. They are in
@@ -197,7 +197,7 @@ See [Authentication and signing](/signing) for building the signed payload, and
 
 ## Fees follow arrival order, not identity
 
-`GET /v1/markets` reports the schedule for each market as `taker_fee_bps` and `maker_fee_bps`.
+`GET /markets` reports the schedule for each market as `taker_fee_bps` and `maker_fee_bps`.
 Read it from there — it is the only source, and the matcher charges exactly what it says.
 
 The fee is paid by the **taker**, and taker is decided per fill by which of the two orders was

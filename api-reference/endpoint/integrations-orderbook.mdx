@@ -1,11 +1,11 @@
 ---
 title: 'Get orderbook'
-openapi: 'GET /v1/integrations/orderbook'
+openapi: 'GET /integrations/orderbook'
 ---
 
 Levels are `[price, quantity]` with the price in **USDC per cNGN** and the quantity in **cNGN**.
 `bids` are orders buying cNGN, highest price first; `asks` are orders selling it, lowest first. This
-is the same orientation as `GET /v1/book`, so nothing needs inverting between the two.
+is the same orientation as `GET /book`, so nothing needs inverting between the two.
 
 Prices are rounded to 10 decimal places away from the touch — bids down, asks up — and quantities
 round down to 6 places, so no level shows a better price or more size than is resting. Orders whose

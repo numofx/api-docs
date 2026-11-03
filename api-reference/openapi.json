@@ -24,7 +24,7 @@
     }
   ],
   "paths": {
-    "/v1/markets": {
+    "/markets": {
       "get": {
         "tags": ["Markets service"],
         "summary": "List enabled markets",
@@ -46,7 +46,7 @@
         }
       }
     },
-    "/v1/book": {
+    "/book": {
       "get": {
         "tags": ["Markets service"],
         "summary": "Get order book",
@@ -56,7 +56,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market identifier, as GET /v1/markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
+            "description": "Market identifier, as GET /markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
           },
           {
             "name": "asset_address",
@@ -111,11 +111,11 @@
         }
       }
     },
-    "/v1/integrations/tickers": {
+    "/integrations/tickers": {
       "get": {
         "tags": ["Markets service"],
         "summary": "List tickers for integrators",
-        "description": "One ticker per enabled market, in the pair orientation GET /v1/markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On cNGN-USDC that is cNGN priced in USDC, the same orientation as GET /v1/book and GET /v1/trades; nothing is inverted. Prices are USDC per cNGN to 10 decimal places: last_price, high, low and bid round down, ask rounds up, so the ticker agrees with the orderbook's top levels. base_volume is cNGN to 6 decimal places, target_volume USDC to 18, both rounded down. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "description": "One ticker per enabled market, in the pair orientation GET /markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On cNGN-USDC that is cNGN priced in USDC, the same orientation as GET /book and GET /trades; nothing is inverted. Prices are USDC per cNGN to 10 decimal places: last_price, high, low and bid round down, ask rounds up, so the ticker agrees with the orderbook's top levels. base_volume is cNGN to 6 decimal places, target_volume USDC to 18, both rounded down. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
         "operationId": "listIntegrationTickers",
         "responses": {
           "200": {
@@ -132,7 +132,7 @@
         }
       }
     },
-    "/v1/integrations/orderbook": {
+    "/integrations/orderbook": {
       "get": {
         "tags": ["Markets service"],
         "summary": "Get orderbook for integrators",
@@ -144,7 +144,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "A ticker_id from GET /v1/integrations/tickers: cNGN-USDC, matched exactly. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers. An unknown value is rejected rather than answered with another market."
+            "description": "A ticker_id from GET /integrations/tickers: cNGN-USDC, matched exactly. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers. An unknown value is rejected rather than answered with another market."
           },
           {
             "name": "depth",
@@ -183,7 +183,7 @@
         }
       }
     },
-    "/v1/integrations/trades": {
+    "/integrations/trades": {
       "get": {
         "tags": ["Markets service"],
         "summary": "List trades for integrators",
@@ -195,7 +195,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "A ticker_id from GET /v1/integrations/tickers: cNGN-USDC, matched exactly. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers."
+            "description": "A ticker_id from GET /integrations/tickers: cNGN-USDC, matched exactly. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers."
           },
           {
             "name": "limit",
@@ -239,7 +239,7 @@
         }
       }
     },
-    "/v1/candles": {
+    "/candles": {
       "get": {
         "tags": ["Markets service"],
         "summary": "Get OHLCV candles",
@@ -249,7 +249,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market identifier, as GET /v1/markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
+            "description": "Market identifier, as GET /markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
           },
           {
             "name": "asset_address",
@@ -332,7 +332,7 @@
         }
       }
     },
-    "/v1/trades": {
+    "/trades": {
       "get": {
         "tags": ["Markets service"],
         "summary": "Get recent trades",
@@ -342,7 +342,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market identifier, as GET /v1/markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
+            "description": "Market identifier, as GET /markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
           },
           {
             "name": "asset_address",
@@ -407,7 +407,7 @@
         }
       }
     },
-    "/v1/orders": {
+    "/orders": {
       "get": {
         "tags": ["Markets service"],
         "summary": "List order history",
@@ -522,19 +522,19 @@
         }
       }
     },
-    "/v1/fills": {
+    "/fills": {
       "get": {
         "tags": ["Markets service"],
         "summary": "List fills",
         "operationId": "listFills",
-        "description": "The fills on the authenticated owner's orders, newest first. Takes the same X-Numo-Auth frame as GET /v1/orders; the owner is taken from it, never from a parameter. A trade between two of the owner's orders is listed once per order.",
+        "description": "The fills on the authenticated owner's orders, newest first. Takes the same X-Numo-Auth frame as GET /orders; the owner is taken from it, never from a parameter. A trade between two of the owner's orders is listed once per order.",
         "parameters": [
           {
             "name": "X-Numo-Auth",
             "in": "header",
             "required": true,
             "schema": { "type": "string" },
-            "description": "Base64url-encoded JSON auth frame {address, signature, nonce, issued_at, expiry}, signed with personal_sign over the order-history message. The same frame GET /v1/orders accepts."
+            "description": "Base64url-encoded JSON auth frame {address, signature, nonce, issued_at, expiry}, signed with personal_sign over the order-history message. The same frame GET /orders accepts."
           },
           {
             "name": "limit",
@@ -578,7 +578,7 @@
         }
       }
     },
-    "/v1/positions": {
+    "/positions": {
       "get": {
         "tags": ["Markets service"],
         "summary": "Get positions",
@@ -614,7 +614,7 @@
         }
       }
     },
-    "/v1/withdrawals": {
+    "/withdrawals": {
       "post": {
         "tags": ["Markets service"],
         "summary": "Create a withdrawal",
@@ -668,7 +668,7 @@
         }
       }
     },
-    "/v1/deposits": {
+    "/deposits": {
       "post": {
         "tags": ["Markets service"],
         "summary": "Create a deposit",
@@ -704,7 +704,7 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WithdrawalRejection" } } }
           },
           "202": {
-            "description": "The same signed deposit is already being submitted; status is pending. Read it later with GET /v1/deposits/{action_hash}.",
+            "description": "The same signed deposit is already being submitted; status is pending. Read it later with GET /deposits/{action_hash}.",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepositRecord" } } }
           },
           "429": {
@@ -722,7 +722,7 @@
         }
       }
     },
-    "/v1/deposits/{action_hash}": {
+    "/deposits/{action_hash}": {
       "get": {
         "tags": ["Markets service"],
         "summary": "Get a deposit",
@@ -740,7 +740,7 @@
         }
       }
     },
-    "/v1/orders/{order_id}": {
+    "/orders/{order_id}": {
       "get": {
         "tags": ["Markets service"],
         "summary": "Get order status",
@@ -776,7 +776,7 @@
         }
       }
     },
-    "/v1/orders/cancel": {
+    "/orders/cancel": {
       "post": {
         "tags": ["Markets service"],
         "summary": "Cancel order by owner and nonce",
@@ -1216,7 +1216,7 @@
         "type": "object",
         "required": ["trade_id", "order_id", "liquidity", "side", "price", "size", "asset_address", "sub_id", "created_at"],
         "properties": {
-          "trade_id": { "type": "integer", "description": "The trade this fill belongs to, as on GET /v1/trades." },
+          "trade_id": { "type": "integer", "description": "The trade this fill belongs to, as on GET /trades." },
           "order_id": { "type": "string", "description": "Your order that filled." },
           "liquidity": { "type": "string", "enum": ["taker", "maker"], "description": "taker when your order crossed the book, maker when it rested and was hit." },
           "side": { "type": "string", "enum": ["buy", "sell"], "description": "Your order's side: buy acquired cNGN and paid USDC. Equals spot_contract.ui_intent.side." },
@@ -1312,7 +1312,7 @@
         "type": "object",
         "required": ["accepted", "tx_hash", "asset", "asset_symbol", "amount", "amount_units", "credited_e18"],
         "properties": {
-          "action_hash": { "type": "string", "description": "EIP-712 hash of the signed action (Matching.getActionHash); the key for GET /v1/deposits/{action_hash}." },
+          "action_hash": { "type": "string", "description": "EIP-712 hash of the signed action (Matching.getActionHash); the key for GET /deposits/{action_hash}." },
           "status": { "type": "string", "enum": ["pending", "submitted", "confirmed", "reverted", "rejected", "unknown"] },
           "accepted": { "type": "boolean", "description": "True once mined successfully." },
           "tx_hash": { "type": "string" },
@@ -1435,7 +1435,7 @@
         "type": "object",
         "required": ["trade_id", "price", "base_volume", "target_volume", "trade_timestamp", "type"],
         "properties": {
-          "trade_id": { "type": "integer", "description": "The same trade_id GET /v1/trades reports." },
+          "trade_id": { "type": "integer", "description": "The same trade_id GET /trades reports." },
           "price": { "type": "string", "description": "target_currency per base_currency: USDC per cNGN, to 10 decimal places.", "example": "0.0007278" },
           "base_volume": { "type": "string", "description": "Base asset traded: cNGN, to 6 decimal places.", "example": "137400" },
           "target_volume": { "type": "string", "description": "Target asset traded: USDC (price x base_volume), to 18 decimal places.", "example": "99.99972" },
@@ -1526,7 +1526,7 @@
       },
       "UnknownMarketResponse": {
         "type": "object",
-        "description": "The 400 from GET /v1/book, GET /v1/trades and GET /v1/candles when the request names no listed market.",
+        "description": "The 400 from GET /book, GET /trades and GET /candles when the request names no listed market.",
         "required": ["error", "message", "markets"],
         "properties": {
           "error": { "type": "string", "enum": ["unknown_market"] },

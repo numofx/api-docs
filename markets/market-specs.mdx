@@ -5,7 +5,7 @@ description: "Contract specifications for cNGN-USDC spot and the cNGN future"
 
 These are the specs for `cNGN-USDC` spot and the `cNGN-30NOV26` future. The venue also lists
 `EURC-USDC`, `EURC-30NOV26` and cNGN options. Read the live values for every market from
-[`GET /v1/markets`](/api-reference/endpoint/get) rather than hard-coding them.
+[`GET /markets`](/api-reference/endpoint/get) rather than hard-coding them.
 
 ## Specs
 
@@ -37,7 +37,7 @@ A new series gets a new identifier, `<BASE>-<DDMONYY>`, and its own expiry.
 
 <Note>
   `future.last_trade_time` is when the series stops trading. The top-level `last_trade_timestamp`
-  on `GET /v1/markets` is something else: the time of the market's most recent fill.
+  on `GET /markets` is something else: the time of the market's most recent fill.
 </Note>
 
 ## Signing scales

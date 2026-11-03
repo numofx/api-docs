@@ -47,12 +47,12 @@ Most rejections happen before the order reaches the book, so a `400` means nothi
 
 ## Missing fields
 
-Every one of these is required on `POST /v1/orders`.
+Every one of these is required on `POST /orders`.
 
 | Error | Fix |
 | ----- | --- |
 | `order_id is required` | Supply a unique client-side id. |
-| `asset_address is required` | Take it from `GET /v1/markets`. |
+| `asset_address is required` | Take it from `GET /markets`. |
 | `nonce is required` | Supply a nonce unique per `(owner, nonce)`. |
 | `limit_price is required` | Supply the price in human decimals. |
 | `desired_amount is required` | Supply the size in human decimals. |
@@ -140,12 +140,12 @@ These are the most common rejections, and they almost always mean the body was s
 ## Instrument
 
 <ParamField body="asset_address must match a configured instrument" type="400">
-  The `(asset_address, sub_id)` pair is not an enabled market. Read `GET /v1/markets` — both
+  The `(asset_address, sub_id)` pair is not an enabled market. Read `GET /markets` — both
   values must come from the same entry.
 </ParamField>
 
 <ParamField body="unknown_market" type="400">
-  `GET /v1/book`, `GET /v1/trades` and `GET /v1/candles` refuse a request that does not name a
+  `GET /book`, `GET /trades` and `GET /candles` refuse a request that does not name a
   listed market. The body carries the `error` code, a `message`, and the identifiers the venue
   accepts:
 
@@ -208,7 +208,7 @@ USDC per cNGN and the size in cNGN. See the [Spot](/spot) guide for the units in
 </ParamField>
 
 Treat `order_id` as an idempotency key you control. A `409` means the first submission was
-accepted, so check its status with `GET /v1/orders/{order_id}` rather than resubmitting.
+accepted, so check its status with `GET /orders/{order_id}` rather than resubmitting.
 
 ## Cancelling
 
@@ -226,16 +226,16 @@ accepted, so check its status with `GET /v1/orders/{order_id}` rather than resub
 
 | Endpoint | Error |
 | -------- | ----- |
-| `GET /v1/trades` | `limit must be between 1 and 100` |
-| `GET /v1/trades` | `before_trade_id must be a positive integer` |
-| `GET /v1/candles` | `interval must be one of 1m, 5m, 15m, 1h, 4h, 1d` |
-| `GET /v1/candles` | `limit must be between 1 and 1000` |
-| `GET /v1/candles` | `start must be an RFC3339 timestamp` |
-| `GET /v1/candles` | `end must be an RFC3339 timestamp` |
-| `GET /v1/candles` | `end must be after start` |
-| `GET /v1/orders/{order_id}` | `order not found` (`404`) |
+| `GET /trades` | `limit must be between 1 and 100` |
+| `GET /trades` | `before_trade_id must be a positive integer` |
+| `GET /candles` | `interval must be one of 1m, 5m, 15m, 1h, 4h, 1d` |
+| `GET /candles` | `limit must be between 1 and 1000` |
+| `GET /candles` | `start must be an RFC3339 timestamp` |
+| `GET /candles` | `end must be an RFC3339 timestamp` |
+| `GET /candles` | `end must be after start` |
+| `GET /orders/{order_id}` | `order not found` (`404`) |
 
-`unknown_market` applies to `GET /v1/book`, `GET /v1/trades`, and `GET /v1/candles` alike, and
+`unknown_market` applies to `GET /book`, `GET /trades`, and `GET /candles` alike, and
 is the one error on those endpoints whose body carries more than `error`.
 
 <Card title="Authentication and signing" icon="key" href="/signing">

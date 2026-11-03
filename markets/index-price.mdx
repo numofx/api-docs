@@ -36,7 +36,7 @@ cNGN trades more than 1% away from 1 naira, no sample is taken and the index sto
 
 The index feed has a 20-minute heartbeat. If it has not updated in 20 minutes, it is stale:
 
-- `band_status` on [`GET /v1/markets`](/api-reference/endpoint/get) reads `index_stale`.
+- `band_status` on [`GET /markets`](/api-reference/endpoint/get) reads `index_stale`.
 - The chain refuses every futures fill, and the venue refuses new futures orders.
 - The mark does not update.
 
@@ -45,7 +45,7 @@ Trading resumes as soon as the index updates.
 ## Direction
 
 On chain, the index feed is in USDC per cNGN, with 18 decimals. `cNGN-30NOV26` quotes the same way, so
-`index_price` on `GET /v1/markets` is the feed's value as is. The retired `USDC-cNGN-30NOV26` quotes
+`index_price` on `GET /markets` is the feed's value as is. The retired `USDC-cNGN-30NOV26` quotes
 cNGN per USDC, so its `index_price` is the inverse.
 
 | Where | Unit | Example |

@@ -1,9 +1,9 @@
 ---
 title: 'List tickers'
-openapi: 'GET /v1/integrations/tickers'
+openapi: 'GET /integrations/tickers'
 ---
 
-Each ticker is in the orientation `GET /v1/markets` advertises: `base_currency` is `cNGN` and
+Each ticker is in the orientation `GET /markets` advertises: `base_currency` is `cNGN` and
 `target_currency` is `USDC`, so every price is **USDC per cNGN** (about `0.00073`), `base_volume`
 is cNGN and `target_volume` is USDC. The `ticker_id` is the market identifier, `cNGN-USDC`; read the
 two currency fields for the orientation rather than parsing it. Futures are not listed, and a

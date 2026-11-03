@@ -31,19 +31,19 @@ A series is listed as `<BASE>-<DDMONYY>`, named for its expiry date:
 | Initial margin        | 25%                             | 6%                              |
 | Maintenance margin    | 15%                             | 4%                              |
 
-Discover series from `GET /v1/markets` rather than hard-coding one. A new series gets a new
+Discover series from `GET /markets` rather than hard-coding one. A new series gets a new
 identifier, a new `sub_id` and its own expiry.
 
 <Warning>
   One unit of `desired_amount` is always **0.001 contract**, whatever the contract size. On
   `cNGN-30NOV26`, `desired_amount` `116` is 0.116 contract, or 116,000 cNGN. `ui_size_unit` on
-  `GET /v1/markets` states the unit, and `amount_scale` and `contract_multiplier` give the same answer.
+  `GET /markets` states the unit, and `amount_scale` and `contract_multiplier` give the same answer.
 </Warning>
 
 ## Discover the market
 
 ```bash
-curl "https://api.numofx.com/v1/markets"
+curl "https://api.numofx.com/markets"
 ```
 
 A future's entry carries the `ui_*` and `engine_*` contract fields, with
@@ -178,7 +178,7 @@ Variation margin (VM) settles in **USDC cash**, and nothing is converted. A move
 short pays it.
 
 * **At the fill.** A fill is marked to the mark at once. A buy above the mark, or a sell below it,
-  pays the gap. [`GET /v1/fills`](/api-reference/endpoint/fills) reports the mark as `mark_price`
+  pays the gap. [`GET /fills`](/api-reference/endpoint/fills) reports the mark as `mark_price`
   and the VM as `vm_usdc`.
 * **At each mark.** The mark is pulled from a signed forward feed at most once an hour. Each update
   may move at most 5% on `cNGN-30NOV26` and 2% on `EURC-30NOV26`, and must sit inside the band around
@@ -186,7 +186,7 @@ short pays it.
   account.
 * **At each settlement.** VM accrues at each mark and is realised into cash at each settlement.
   Between a mark and the next settlement, the accrued amount is pending. `pending_vm_usdc` on
-  [`GET /v1/positions`](/api-reference/endpoint/positions) reports it, positive when owed to you. It
+  [`GET /positions`](/api-reference/endpoint/positions) reports it, positive when owed to you. It
   counts toward margin at par.
 
 ## Settlement
@@ -201,7 +201,7 @@ samples' average.
 
 ## Read a position
 
-[`GET /v1/positions?subaccount_id=N`](/api-reference/endpoint/positions) returns the account's
+[`GET /positions?subaccount_id=N`](/api-reference/endpoint/positions) returns the account's
 position in every listed series, read from chain. It needs no signature, because positions are
 public on chain. Each entry under `futures` gives the series' `market`, `sub_id` and `status`
 (`trading`, `closing` once past `last_trade_time`, or `settled`), your signed `contracts`, the
@@ -223,13 +223,13 @@ The same values are on chain if you would rather read them there:
   for maintenance, in USD at 18 decimals, on `margin_manager_address`.
 
 Your fills, with their `mark_price` and `vm_usdc`, are on
-[`GET /v1/fills`](/api-reference/endpoint/fills).
+[`GET /fills`](/api-reference/endpoint/fills).
 
 ## Market data
 
 The book, trades and candles work for a future as for spot: pass the series' `market` as `symbol`
 on REST endpoints, or as `market` on the [websocket stream](/api-reference/websocket). Prices are
-USDC per unit of the base. The `/v1/integrations/*` endpoints serve spot only and refuse a future's
+USDC per unit of the base. The `/integrations/*` endpoints serve spot only and refuse a future's
 `ticker_id`.
 
 ## The retired series
@@ -240,7 +240,7 @@ USDC per unit of the base. The `/v1/integrations/*` endpoints serve spot only an
 the book.
 
 It differs from the series above in every unit, and everything else on this page applies to it only
-where it says so on `GET /v1/markets`:
+where it says so on `GET /markets`:
 
 |                  | `USDC-cNGN-30NOV26`                                               |
 | ---------------- | ----------------------------------------------------------------- |

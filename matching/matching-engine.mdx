@@ -9,7 +9,7 @@ signatures and moves the assets.
 
 ## How a match happens
 
-1. You submit a signed order to [`POST /v1/orders`](/api-reference/endpoint/create). It rests on
+1. You submit a signed order to [`POST /orders`](/api-reference/endpoint/create). It rests on
    the book.
 2. The matcher polls the book several times a second. On each pass it takes the best crossed pair
    in each market, in [price-time priority](/matching/order-book).
