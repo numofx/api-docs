@@ -879,7 +879,7 @@
           "last_trade_timestamp": { "type": "integer", "description": "Unix seconds of the most recent fill." },
           "order_entry_spec": { "type": "string", "description": "Identifies the ui_intent contract the market accepts: cngn_usdc_spot_v1 on cNGN-USDC, an identity mapping: the engine order is the ui_intent. Omitted on futures, which take raw engine values only. The retired usdc_cngn_* specs are refused.", "example": "cngn_usdc_spot_v1" },
           "ui_price_unit": { "type": "string", "description": "Unit of ui_intent.price. The same as engine_price_unit.", "example": "USDC per cNGN" },
-          "ui_size_unit": { "type": "string", "description": "Unit of a size: cNGN amount on spot. On a future, read one unit as 0.001 contract, from amount_scale and contract_multiplier.", "example": "cNGN amount" },
+          "ui_size_unit": { "type": "string", "description": "Unit of a size: cNGN amount on spot, 1,000 cNGN of notional on cNGN-30NOV26. On a future, one unit is 0.001 contract.", "example": "cNGN amount" },
           "ui_side_meaning": { "type": "string", "description": "What each side does in the base. On spot: BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC. On a future a BUY (long) gains when the base strengthens against USD, a SELL (short) when it weakens.", "example": "BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC." },
           "engine_price_unit": { "type": "string", "description": "Unit of the raw price and limit_price fields.", "example": "USDC per cNGN" },
           "engine_amount_unit": { "type": "string", "description": "Unit of the raw desired_amount, filled_amount and size fields.", "example": "cNGN amount" },
