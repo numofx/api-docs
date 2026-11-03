@@ -3,9 +3,19 @@
   "theme": "mint",
   "name": "Numo Docs",
   "colors": {
-    "primary": "#4EA7E5",
-    "light": "#7BC4F2",
-    "dark": "#2F86C9"
+    "primary": "#141414",
+    "light": "#F6F0E9",
+    "dark": "#141414"
+  },
+  "appearance": {
+    "default": "light",
+    "strict": true
+  },
+  "background": {
+    "color": {
+      "light": "#F6F0E9",
+      "dark": "#F6F0E9"
+    }
   },
   "favicon": "/images/favicon.ico",
   "navigation": {

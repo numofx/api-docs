@@ -1,0 +1,37 @@
+/* Warm the neutral grays so they sit on the landing page's cream background.
+   100 and 200 are the landing page's #EDE5DA and #E4DACC. */
+:root:root {
+  --gray-50: 241 235 227;
+  --gray-100: 237 229 218;
+  --gray-200: 228 218 204;
+  --gray-300: 209 198 183;
+  --gray-400: 163 154 142;
+  --gray-500: 115 108 99;
+  --gray-600: 82 77 71;
+  --gray-700: 63 59 54;
+  --gray-800: 37 35 32;
+  --gray-900: 23 22 20;
+  --gray-950: 10 10 9;
+}
+
+/* Headings, links and inline code use Tailwind's blue-tinted prose colors. */
+.prose.prose,
+.prose-gray.prose-gray {
+  --tw-prose-body: rgb(var(--gray-700));
+  --tw-prose-headings: rgb(var(--gray-900));
+  --tw-prose-lead: rgb(var(--gray-600));
+  --tw-prose-links: rgb(var(--gray-900));
+  --tw-prose-bold: rgb(var(--gray-900));
+  --tw-prose-counters: rgb(var(--gray-500));
+  --tw-prose-bullets: rgb(var(--gray-300));
+  --tw-prose-hr: rgb(var(--gray-200));
+  --tw-prose-quotes: rgb(var(--gray-900));
+  --tw-prose-quote-borders: rgb(var(--gray-200));
+  --tw-prose-captions: rgb(var(--gray-500));
+  --tw-prose-kbd: rgb(var(--gray-900));
+  --tw-prose-code: rgb(var(--gray-900));
+  --tw-prose-pre-code: rgb(var(--gray-200));
+  --tw-prose-pre-bg: rgb(var(--gray-800));
+  --tw-prose-th-borders: rgb(var(--gray-300));
+  --tw-prose-td-borders: rgb(var(--gray-200));
+}
