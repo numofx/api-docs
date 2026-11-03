@@ -36,9 +36,8 @@ identifier, a new `sub_id` and its own expiry.
 
 <Warning>
   One unit of `desired_amount` is always **0.001 contract**, whatever the contract size. On
-  `cNGN-30NOV26`, `desired_amount` `116` is 0.116 contract, or 116,000 cNGN. Work out what a unit is
-  from `amount_scale` and `contract_multiplier`, not from `ui_size_unit`, which reads
-  `cNGN of notional`.
+  `cNGN-30NOV26`, `desired_amount` `116` is 0.116 contract, or 116,000 cNGN. `ui_size_unit` on
+  `GET /v1/markets` states the unit, and `amount_scale` and `contract_multiplier` give the same answer.
 </Warning>
 
 ## Discover the market
