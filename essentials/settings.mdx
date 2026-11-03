@@ -25,8 +25,8 @@ Use `GET /v1/markets` before you submit anything. The response contains the cano
 - `sub_id`
 - `contract_type`
 - `settlement_type`
-- `base_asset_symbol` and `quote_asset_symbol` — `cNGN` and `USDC` on spot, `USDC` and `cNGN` on a future
-- `display_name` — `cNGN-USDC` for spot, `USDC-cNGN-<DDMONYY>` for a future, such as `USDC-cNGN-30NOV26`
+- `base_asset_symbol` and `quote_asset_symbol` — `cNGN` and `USDC` on spot and on `cNGN-30NOV26`
+- `display_name` — `cNGN-USDC` for spot, `<BASE>-<DDMONYY>` for a future, such as `cNGN-30NOV26`
 - `tick_size`
 - `order_entry_spec` — `cngn_usdc_spot_v1`, the `ui_intent` contract spot accepts. Futures have none
   and take raw engine values.
@@ -100,5 +100,9 @@ Use `POST /v1/orders/cancel` with:
 
 - `owner_address`
 - `nonce`
+- `signer_address`
+- `expiry`
+- `signature`
 
-Cancellation is owner-and-nonce based, not order-id based.
+Cancellation is owner-and-nonce based, not order-id based, and the owner must sign it. See
+[Cancel an order](/signing#cancel-an-order).

@@ -78,7 +78,7 @@ Use the `chainId` and `Matching` address for the network you are trading on.
 | `asset`         | `address` | `asset_address`  | —                |
 | `subId`         | `uint256` | `sub_id`         | —                |
 | `limitPrice`    | `int256`  | `limit_price`    | wei (1e18)       |
-| `desiredAmount` | `int256`  | `desired_amount` | wei (1e18)       |
+| `desiredAmount` | `int256`  | `desired_amount` | size × `amount_scale` |
 | `worstFee`      | `uint256` | `worst_fee`      | raw, **per unit** |
 | `recipientId`   | `uint256` | `recipient_id`   | —                |
 | `isBid`         | `bool`    | `side`           | —                |
@@ -111,6 +111,8 @@ never matches.
 
 - **`action_json.data`** carries the raw onchain values in **wei** — the numbers the contracts
   settle on.
+  `desiredAmount` is the size × the market's `amount_scale` from `GET /v1/markets`: 1e18 on spot, 1e15
+  on a [future](/futures#place-an-order).
 - **The order body** carries **human decimal** values. `markets-service` normalizes them
   itself: the price is divided by the instrument's tick size, and the amount by its minimum
   size.
@@ -146,7 +148,7 @@ const desiredAmount = 1000000000000000000000n // 1000 x 1e18
 // Derive it from the market's taker_fee_bps (GET /v1/markets) and this order's price, with a
 // little headroom. 0 is correct ONLY on a market that charges nothing: whoever arrives second is
 // the taker, so a zero bound on a fee-charging market reverts every fill you take.
-const takerFeeBps = 25n        // from GET /v1/markets
+const takerFeeBps = 15n        // from GET /v1/markets
 const headroomBps = 5n         // so a schedule change does not brick orders already resting
 const worstFee = (limitPrice * (takerFeeBps + headroomBps)) / 10000n
 const recipientId = 10n
@@ -272,11 +274,62 @@ owner key. The session key must be registered onchain first:
 registerSessionKey(address toAllow, uint expiry)
 ```
 
-`Matching` then accepts that signer for the owner's subaccounts until `expiry`. Deregistering
+`Matching` then accepts that signer on orders for the owner's subaccounts until `expiry`. Cancels,
+deposits and withdrawals still need the owner's signature. Deregistering
 is subject to a 10-minute cooldown (`DEREGISTER_KEY_COOLDOWN`).
 
 Contract signers are supported too — if `signer` is a contract, verification falls back to
 ERC-1271.
+
+## Cancel an order
+
+`POST /v1/orders/cancel` takes the order's `owner_address` and `nonce`, signed by the owner with the
+same `Matching` domain:
+
+```solidity
+Cancel(address owner,address signer,uint256 nonce,uint256 expiry)
+```
+
+Send `signer_address`, `expiry` and `signature` with them. `signer` must equal `owner`, because a
+[session key](#session-keys) cannot cancel. `expiry` must be in the future, and it bounds how long the
+signature can be replayed, so keep it short.
+
+```ts
+const expiry = BigInt(Math.floor(Date.now() / 1000) + 120)
+
+const cancelSignature = await account.signTypedData({
+  domain: { name: 'Matching', version: '1.0', chainId: 8453, verifyingContract: MATCHING },
+  types: {
+    Cancel: [
+      { name: 'owner', type: 'address' },
+      { name: 'signer', type: 'address' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'expiry', type: 'uint256' },
+    ],
+  },
+  primaryType: 'Cancel',
+  message: { owner: account.address, signer: account.address, nonce: 1n, expiry },
+})
+
+await fetch(`${MARKETS_SERVICE_URL}/v1/orders/cancel`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    owner_address: account.address,
+    signer_address: account.address,
+    nonce: '1',
+    expiry: expiry.toString(),
+    signature: cancelSignature,
+  }),
+})
+```
+
+<Warning>
+  A cancel takes the order off the venue's book. It does not invalidate your signature on chain, so
+  the signed order stays valid until its `expiry`. Cancels go one order at a time, and the venue has no
+  cancel-all or cancel-on-disconnect. If you quote automatically, sign a short `expiry`, such as five
+  minutes, and re-sign before it lapses. It is what limits your exposure if your bot stops.
+</Warning>
 
 ## Contract addresses
 

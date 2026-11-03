@@ -10,18 +10,18 @@ MarginEngine, read from chain. No authentication is needed, because positions ar
 
 Each entry under `futures` is one series the account holds. A series it is flat in is not listed.
 
-- `contracts` is signed; `side` is `long` when it is positive. A long is long USDC, and gains when
-  the naira weakens.
-- `notional_usdc` is the size in USDC: |`contracts`| × 1,000.
+- `contracts` is signed; `side` is `long` when it is positive. A long gains when the base strengthens
+  against the dollar.
+- `notional_usdc` is the size in USDC at the mark: |`contracts`| × the contract size × `mark_price`.
 - `status` is `trading` before `last_trade_time`, `closing` from then until the settlement price is
   fixed, and `settled` after. A closing series still holds its position.
-- `mark_price` is the series' mark in cNGN per USDC, and `mark_updated_at` is when it was set.
+- `mark_price` is the series' mark in USDC per unit of the base, and `mark_updated_at` is when it was set.
 
 ## Pending variation margin
 
 Variation margin accrues at each mark and is realised into cash at each settlement.
-`pending_vm_cngn` is what has accrued since the account was last settled, in cNGN, positive when
-owed to you. It runs from each fill's own price, so it is not simply the mark's move × your
+`pending_vm_usdc` is what has accrued since the account was last settled, in USDC, positive when
+owed to you. The retired `USDC-cNGN-30NOV26` reports `pending_vm_cngn` instead, in cNGN. It runs from each fill's own price, so it is not simply the mark's move × your
 position. See [Variation margin](/futures#variation-margin).
 
 ## Margin
@@ -29,7 +29,8 @@ position. See [Variation margin](/futures#variation-margin).
 Margin covers the whole account, including every series and the cNGN it holds, so it is reported
 once, under `futures_account`, as `im_surplus_usd` and `mm_surplus_usd`. Below zero on initial
 margin, the account cannot open or add to a position. Below zero on maintenance margin, the account
-is liquidated. `futures_account` is absent for an account under another manager.
+is liquidated. `futures_account.manager` names the engine the account is under, and only series under that engine
+count toward its margin. `futures_account` is absent for an account under no futures engine.
 
 ## Unreadable fields
 

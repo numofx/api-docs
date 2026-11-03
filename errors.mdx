@@ -12,6 +12,7 @@ Every error response has the same shape:
 | Status | Meaning                                                                 |
 | ------ | ----------------------------------------------------------------------- |
 | `400`  | The request is malformed or internally inconsistent. Fix and resubmit.   |
+| `401`  | The cancel's signature is missing or does not authorize it.              |
 | `403`  | The cancel targets an order you do not own, or a protected namespace.    |
 | `404`  | No such order, or the order is no longer active.                         |
 | `409`  | `order_id` has already been used.                                        |
@@ -152,7 +153,7 @@ These are the most common rejections, and they almost always mean the body was s
   {
     "error": "unknown_market",
     "message": "no such market: NOPE",
-    "markets": ["USDC-cNGN-30NOV26", "cNGN-USDC"]
+    "markets": ["cNGN-30NOV26", "cNGN-USDC"]
   }
   ```
 
@@ -214,6 +215,10 @@ accepted, so check its status with `GET /v1/orders/{order_id}` rather than resub
 | Status | Error | Cause |
 | ------ | ----- | ----- |
 | `404` | `active order not found` | Already filled, already cancelled, or never existed. |
+| `401` | `cancel must be signed` | The request carries no `signature`. See [Cancel an order](/signing#cancel-an-order). |
+| `401` | `cancel signer must be the owner` | A session key signed it. Sign with the owner key. |
+| `401` | `cancel expiry: …` | `expiry` is missing or already past. |
+| `401` | `signature does not authorize this cancel` | The signature does not match the owner, signer, nonce and expiry sent. |
 | `403` | `service-tagged cancels are not allowed for protected namespace …` | The order belongs to a protected `order_id` namespace. |
 | `500` | `failed to resolve cancel target` | Lookup failed server-side. Retry. |
 

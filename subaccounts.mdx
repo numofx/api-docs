@@ -31,7 +31,8 @@ For orders, you can sign with a session key instead of the owner key. Register i
 `registerSessionKey(address toAllow, uint expiry)`. Matching then accepts that signer for all the
 owner's subaccounts until `expiry`. See [Session keys](/signing#session-keys).
 
-Deposits and withdrawals must be signed by the owner. Session keys are not supported for them.
+Deposits, withdrawals and [cancels](/signing#cancel-an-order) must be signed by the owner. Session keys
+are not supported for them.
 
 ## Use a subaccount on an order
 
@@ -44,6 +45,14 @@ A mismatch is refused. See [Order errors and validation](/errors#field-consisten
 futures positions and its margin surplus, read from chain. No signature is needed, because
 positions are public on chain.
 
+## Accounts under the first MarginEngine
+
+A subaccount stays under the MarginEngine it was opened under, and there is no way to move it. Accounts
+opened under the first engine, `0xA19E296021c9DF25b90D96C2A0793CC3D0800758`, cannot hold the current
+futures. To move, open a new subaccount with a [deposit](/api-reference/endpoint/deposits), and withdraw
+from the old one. Read an account's engine as `futures_account.manager` on
+[`GET /v1/positions`](/api-reference/endpoint/positions).
+
 ## Accounts opened before the cutover
 
 A subaccount opened before the 2026-10-04 cutover may still hold balances in the retired wrapped
@@ -54,7 +63,7 @@ assets. You can still withdraw them. See
 
 | Contract | Address on Base |
 | --- | --- |
-| MarginEngine | `0xA19E296021c9DF25b90D96C2A0793CC3D0800758` |
+| MarginEngine | `0x0705219a1594d5Fc5dC2573da4082cAf3e1B0950` |
 | `Matching` | `0x9E90A9cD13d859Bd6a08168082FB1F6F7405F191` |
 | DepositModule | `0x6540f8d9Eb599b045C05E45cb6a5B1730a806658` |
 | WithdrawalModule | `0x0a10AE2f5D2482cE1e43bC309D430B8861C2b5aB` |
