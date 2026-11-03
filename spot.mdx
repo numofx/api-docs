@@ -223,6 +223,6 @@ Two details that decide the number:
   configured constant is right at exactly one price.
 - **Leave headroom above the published schedule.** Orders already resting were signed under the
   old number, and they cannot be re-signed atomically with a fee change. Our own clients sign 30
-  bps against a 25 bps schedule for this reason.
+  bps, above every market's schedule, for this reason.
 
 See [Authentication and signing](/signing) for how to compute and encode it.

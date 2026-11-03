@@ -11,8 +11,16 @@ The taker pays the fee on each fill. The maker pays nothing on markets with `mak
 and `maker_fee_bps`. Read it from there. It is the only source, and the matcher charges exactly what
 it says.
 
-On the cNGN futures, `taker_fee_bps = 25` and `maker_fee_bps = 0`. The fee is 25 bps of notional,
-so 2.5 USDC a contract at any price. Fees are paid from the account's USDC.
+| Market | Taker | Maker |
+| --- | --- | --- |
+| `cNGN-USDC` | 15 bps | 0 |
+| `cNGN-30NOV26` | 15 bps | 0 |
+| `cNGN-30NOV26` options | 15 bps | 0 |
+| `EURC-USDC` | 5 bps | 0 |
+| `EURC-30NOV26` | 5 bps | 0 |
+| `USDC-cNGN-30NOV26` (close-only) | 25 bps | 0 |
+
+Fees are paid from the account's USDC.
 
 ## Who is the taker
 
@@ -35,7 +43,7 @@ To be sure you are the maker, set [`post_only`](/matching/order-types#post-only)
 - **It is per unit filled, not a total.** On spot, the right bound is `feeRate × price`, so it
   changes with price. On futures, it is per contract, in USDC × 1e18.
 - **Leave headroom above the schedule.** Resting orders were signed under the old schedule and
-  cannot be re-signed when it changes. Numo's own clients sign 30 bps against a 25 bps schedule.
+  cannot be re-signed when it changes. Numo's own clients sign 30 bps, above every market's schedule.
 - **Do not sign `0` on a market with a taker fee.** Every fill where you are the taker reverts,
   until the order expires.
 
