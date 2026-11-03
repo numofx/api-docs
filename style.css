@@ -35,3 +35,26 @@
   --tw-prose-th-borders: rgb(var(--gray-300));
   --tw-prose-td-borders: rgb(var(--gray-200));
 }
+
+/* Replace Mintlify's white surfaces with the landing page's panel color. */
+.card.card,
+.bg-neutral-50.bg-neutral-50,
+div.size-6.shadow-xs,
+div.w-6.h-6.shadow-sm {
+  background-color: rgb(var(--gray-100));
+}
+
+.card.card {
+  border-color: transparent;
+}
+
+/* Code blocks set their background inline, so this needs !important. */
+.code-block-background {
+  background-color: rgb(var(--gray-100)) !important;
+}
+
+/* The fade behind the copy button also defaults to white. */
+.code-block-fade-overlay {
+  --fade-color-light: #EDE5DA !important;
+  --fade-color-dark: #EDE5DA !important;
+}
