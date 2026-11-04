@@ -504,7 +504,7 @@
             }
           },
           "422": {
-            "description": "A future order the chain could not settle: its limit is outside the fill band (error starts fill_band:), its account is not under the MarginEngine, or reduce_only has nothing to reduce.",
+            "description": "A post-only order that would cross the book, or a future order the chain could not settle: its limit is outside the fill band (error starts fill_band:), its account is not under the MarginEngine, or reduce_only has nothing to reduce.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -512,7 +512,7 @@
             }
           },
           "503": {
-            "description": "A future order the venue cannot check right now: the index is stale, or the band, the series or the account's manager could not be read. Retry shortly.",
+            "description": "An order the venue cannot check right now: the account's custody could not be read, or, for a future, the index is stale or the band, the series or the account's manager could not be read. Nothing was placed. Retry shortly.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }

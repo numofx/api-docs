@@ -16,7 +16,9 @@ Every error response has the same shape:
 | `403`  | The cancel targets an order you do not own, or a protected namespace.    |
 | `404`  | No such order, or the order is no longer active.                         |
 | `409`  | `order_id` has already been used.                                        |
+| `422`  | The order is well formed but cannot be accepted now, such as a post-only order that would cross. |
 | `500`  | Server-side failure. Safe to retry.                                      |
+| `503`  | The venue could not read what it needs from the chain, such as the account's custody. Nothing was placed. Retry shortly. |
 
 Most rejections happen before the order reaches the book, so a `400` means nothing was placed.
 
@@ -25,6 +27,16 @@ Most rejections happen before the order reaches the book, so a `400` means nothi
   signing](/signing#what-the-service-checks). An order whose signature does not authorize its
   action is rejected here rather than failing later onchain.
 </Note>
+
+## Custody
+
+<ParamField body="subaccount_id … is not deposited in matching custody" type="400">
+  The Matching contract does not hold this subaccount. Deposit it first. The same applies to `subaccount_id … has no owner recorded in matching`.
+</ParamField>
+
+<ParamField body="the account's custody could not be read; retry shortly" type="503">
+  A chain read failed, so the venue cannot yet say whether it holds the subaccount. Nothing is wrong with the order. Resubmit it.
+</ParamField>
 
 ## Signature
 
