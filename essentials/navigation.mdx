@@ -5,26 +5,9 @@ description: "How execution-service, execution-contracts, and risk-core turn ord
 
 ## Execution service
 
-`execution-service` is a thin HTTP wrapper around the trusted executor.
+`execution-service` is an internal service that submits fills on chain. It runs on a private network and takes matched orders only from the matcher, so you never call it.
 
-It exposes:
-
-- `GET /healthz`
-- `POST /`
-- `POST /execute`
-
-The payload contains:
-
-- `market`
-- `asset_address`
-- `module_address`
-- `maker_order_id`
-- `taker_order_id`
-- `actions`
-- `signatures`
-- `order_data`
-
-The service validates payload shape with Zod before submitting anything onchain.
+It validates each matched pair before submitting anything on chain.
 
 ## Execution contracts
 

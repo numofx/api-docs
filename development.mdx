@@ -71,7 +71,8 @@ The settlement note in the matcher registry is:
 
 ### `execution-service`
 
-- accepts `POST /execute`
+- runs on a private network and takes matched orders only from the matcher, so you never call it
+- holds the key that submits fills on chain
 - requires `actions.length === signatures.length`
 - requires `actions[0].subaccount_id === order_data.taker_account`
 - requires every `action.module === module_address`

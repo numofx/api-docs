@@ -23,7 +23,8 @@ Use this reference for:
 ## Services covered here
 
 - `markets-service`
-- `execution-service`
+
+Settlement runs behind it on `execution-service`, an internal service you never call.
 
 The contracts and risk engine behind those services live in:
 
@@ -45,7 +46,8 @@ The contracts and risk engine behind those services live in:
     Post signed order payloads to `POST /orders`, then track fills with
     `GET /orders/{order_id}` or the authenticated `orders` WebSocket channel.
   </Step>
-  <Step title="Execute matched trades">
-    Let the matcher send crossed-order payloads to `POST /execute` on `execution-service`.
+  <Step title="Let matched orders settle">
+    The venue [matches crossed orders and settles them on chain](/matching/matching-engine) for you.
+    You sign the order and never submit the fill.
   </Step>
 </Steps>

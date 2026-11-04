@@ -134,12 +134,6 @@
               "api-reference/endpoint/integrations-orderbook",
               "api-reference/endpoint/integrations-trades"
             ]
-          },
-          {
-            "group": "Execution service",
-            "pages": [
-              "api-reference/endpoint/webhook"
-            ]
           }
         ]
       },
@@ -183,5 +177,8 @@
     "socials": {
       "github": "https://github.com/numofx/api-docs"
     }
-  }
+  },
+  "redirects": [
+    { "source": "/api-reference/endpoint/webhook", "destination": "/matching/matching-engine" }
+  ]
 }
