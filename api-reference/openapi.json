@@ -49,7 +49,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market identifier, as GET /markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
+            "description": "Market from GET /markets, such as cNGN-USDC or cNGN-30NOV26. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
           },
           {
             "name": "asset_address",
@@ -84,7 +84,7 @@
             }
           },
           "400": {
-            "description": "unknown_market: the request named no listed market. Either the symbol, or the asset_address and sub_id pair, matched nothing (identifiers match exactly; the deprecated USDCcNGN-SPOT still resolves until 2027-01-06), or the request named no market at all. Before 2026-10-08 both cases returned the spot book.",
+            "description": "unknown_market: the request named no listed market.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UnknownMarketResponse" },
@@ -242,7 +242,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market identifier, as GET /markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
+            "description": "Market from GET /markets, such as cNGN-USDC or cNGN-30NOV26. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
           },
           {
             "name": "asset_address",
@@ -305,7 +305,7 @@
             }
           },
           "400": {
-            "description": "unknown_market, or an invalid query parameter (those return {\"error\": \"<message>\"} as before). unknown_market: the request named no listed market. Either the symbol, or the asset_address and sub_id pair, matched nothing (identifiers match exactly; the deprecated USDCcNGN-SPOT still resolves until 2027-01-06), or the request named no market at all. Before 2026-10-08 both cases returned the spot book.",
+            "description": "unknown_market, or an invalid query parameter.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UnknownMarketResponse" },
@@ -335,7 +335,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market identifier, as GET /markets lists it: cNGN-USDC, or a future such as cNGN-30NOV26. Matched exactly. The pre-rename identifier USDCcNGN-SPOT is accepted as a deprecated alias until 2027-01-06; a request using one is answered under the canonical identifier with Deprecation: true and X-Canonical-Market response headers."
+            "description": "Market from GET /markets, such as cNGN-USDC or cNGN-30NOV26. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
           },
           {
             "name": "asset_address",
@@ -380,7 +380,7 @@
             }
           },
           "400": {
-            "description": "unknown_market, or an invalid limit or before_trade_id (those return {\"error\": \"<message>\"} as before). unknown_market: the request named no listed market. Either the symbol, or the asset_address and sub_id pair, matched nothing (identifiers match exactly; the deprecated USDCcNGN-SPOT still resolves until 2027-01-06), or the request named no market at all. Before 2026-10-08 both cases returned the spot book.",
+            "description": "unknown_market, or an invalid limit or before_trade_id.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/UnknownMarketResponse" },
@@ -405,7 +405,7 @@
         "tags": ["Markets service"],
         "summary": "List order history",
         "operationId": "listOrderHistory",
-        "description": "The authenticated owner's orders in every status (active, matching, filled, cancelled, expired), newest first. The owner is taken from the signed X-Numo-Auth frame, never from a parameter. Filled orders, and any cancelled or expired order that traded, are retained indefinitely; cancelled and expired orders with no fills for 30 days.",
+        "description": "Your orders in every status, newest first.",
         "parameters": [
           {
             "name": "X-Numo-Auth",
@@ -520,7 +520,7 @@
         "tags": ["Markets service"],
         "summary": "List fills",
         "operationId": "listFills",
-        "description": "The fills on the authenticated owner's orders, newest first. Takes the same X-Numo-Auth frame as GET /orders; the owner is taken from it, never from a parameter. A trade between two of the owner's orders is listed once per order.",
+        "description": "Your fills, newest first.",
         "parameters": [
           {
             "name": "X-Numo-Auth",
@@ -576,7 +576,7 @@
         "tags": ["Markets service"],
         "summary": "Get positions",
         "operationId": "getPositions",
-        "description": "An account's futures positions in every listed series, and its margin under the MarginEngine, read from chain. Positions are public on chain, so no signature is needed. A futures field the venue could not read is left out, and the rest of the response is still served: treat an absent field as unknown, not as zero.",
+        "description": "An account's futures positions and margin, read from chain.",
         "parameters": [
           {
             "name": "subaccount_id",
@@ -612,7 +612,7 @@
         "tags": ["Markets service"],
         "summary": "Create a withdrawal",
         "operationId": "createWithdrawal",
-        "description": "Withdraws from a subaccount held by Matching with one signed WithdrawalModule action. The venue verifies the signature and that Matching records action.owner as the owner, simulates the withdrawal, and submits it through Matching.verifyAndMatch. Tokens are paid to action.owner. Every check fails closed.",
+        "description": "Withdraws from a subaccount held by Matching with one signed action.",
         "requestBody": {
           "required": true,
           "content": {
@@ -666,7 +666,7 @@
         "tags": ["Markets service"],
         "summary": "Create a deposit",
         "operationId": "createDeposit",
-        "description": "Opens a trading account under the MarginEngine (subaccount_id 0) and funds it, or tops one up, with one signed DepositModule action. The venue verifies the action, reads the nonce, ownership and the owner's token balance and allowance, the issuer's freezes and pause, and the cNGN cap from the chain, simulates, and submits it through Matching.verifyAndMatch, paying the gas.",
+        "description": "Opens and funds a trading account, or tops one up, with one signed action. The venue pays the gas.",
         "requestBody": {
           "required": true,
           "content": {
@@ -685,7 +685,7 @@
             }
           },
           "400": {
-            "description": "Malformed or off-policy request, or a chain pre-check failed: a spent nonce, not your account, an account not under the MarginEngine, or too little USDC balance or allowance. error says what to do; revert names the on-chain revert when there was one.",
+            "description": "Invalid request or a failed chain check. error says what to do.",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WithdrawalRejection" } } }
           },
           "401": {
@@ -720,7 +720,7 @@
         "tags": ["Markets service"],
         "summary": "Get a deposit",
         "operationId": "getDeposit",
-        "description": "A deposit's record by the EIP-712 hash of its signed action (Matching.getActionHash). A submitted deposit is re-read from the chain first, so a receipt that timed out resolves on the next read.",
+        "description": "A deposit's record, by the EIP-712 hash of its signed action.",
         "parameters": [
           { "name": "action_hash", "in": "path", "required": true, "schema": { "type": "string" }, "description": "0x followed by 64 hex digits." }
         ],
@@ -964,7 +964,7 @@
       },
       "TradeStats24h": {
         "type": "object",
-        "description": "Stats over the trailing 24 hours, computed from the market's fills on each request: a rolling window, not the UTC day. Prices are raw engine values in USDC per cNGN, the same orientation as every other price. Every field is omitted when nothing traded in the window.",
+        "description": "Stats over the trailing 24 hours. Every field is omitted when nothing traded.",
         "properties": {
           "change": { "type": "string", "description": "Last price minus the window's first traded price, in engine price units." },
           "high": { "type": "string", "description": "Highest price in the window, in USDC per cNGN." },
@@ -995,7 +995,7 @@
           "last_trade_time": { "type": "integer", "description": "Unix seconds after which no order is accepted and nothing fills. One hour before expiry.", "example": 1796043600 },
           "listed": { "type": "boolean", "description": "The series is listed on its FutureAsset." },
           "settled": { "type": "boolean", "description": "The series has settled." },
-          "trading_open": { "type": "boolean", "description": "Whether the matcher crosses orders: the series is listed, unsettled and before its last trade time, the TradeModule treats it as a dated future, the MarginEngine has a position cap on it and is not paused. Orders are accepted and rest while it is false." },
+          "trading_open": { "type": "boolean", "description": "Whether the matcher crosses orders. Orders still rest while it is false." },
           "trading_closed_reason": { "type": "string", "description": "Why trading_open is false. Omitted while it is true." },
           "mark_price": { "type": "string", "description": "The mark variation margin is settled against.", "example": "1377.493377719890714283" },
           "index_price": { "type": "string", "description": "The index the fill band is centred on.", "example": "1359.000000000001175535" },
@@ -1019,7 +1019,7 @@
       },
       "SpotContract": {
         "type": "object",
-        "description": "Present on cNGN-USDC. Restates the raw engine order at display scales. ui_intent and engine_order are the same order in the same orientation (USDC per cNGN, sized in cNGN); ui_intent prints the price to 10 decimal places and the size to 6, engine_order carries the engine's 18.",
+        "description": "Present on cNGN-USDC. Restates the engine order at display scales.",
         "properties": {
           "spec": { "type": "string", "description": "The market's order_entry_spec.", "example": "cngn_usdc_spot_v1" },
           "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
@@ -1072,9 +1072,9 @@
           "limit_price": { "type": "string" },
           "worst_fee": { "type": "string" },
           "expiry": { "type": "integer" },
-          "order_entry_spec": { "type": "string", "description": "cNGN-USDC only — sending it on an order for any other market, including a future, is rejected. Optional: omit both this and ui_intent to submit raw engine values. If either is present, this must be the market's own spec — cngn_usdc_spot_v1 on spot — and ui_intent becomes required. The retired usdc_cngn_spot_v1 and usdc_cngn_perp_v1 specs, and the other market's spec, are refused.", "example": "cngn_usdc_spot_v1" },
+          "order_entry_spec": { "type": "string", "description": "Optional, cNGN-USDC only: cngn_usdc_spot_v1. Requires ui_intent. Omit both to submit raw engine values.", "example": "cngn_usdc_spot_v1" },
           "ui_intent": {
-            "description": "cNGN-USDC only — sending it on an order for any other market, including a future, is rejected. Optional, and paired with order_entry_spec: sending one without the other is rejected. When present, the service derives side, limit_price and desired_amount from it as the identity: side = ui_intent.side, limit_price = ui_intent.price (USDC per cNGN), desired_amount = ui_intent.size (cNGN). If you send those fields as well, each must equal its ui_intent counterpart or the order is rejected.",
+            "description": "Optional, cNGN-USDC only. Requires order_entry_spec. Sets side, limit_price and desired_amount. If you also send those fields, they must match.",
             "allOf": [{ "$ref": "#/components/schemas/SpotUIIntent" }]
           },
           "reduce_only": { "type": "boolean", "default": false, "description": "Futures only: the order may only shrink the account's position in the series. Refused on spot (400), and refused (422) when the account has no position or the order is on the same side as it. The matcher clamps each fill so it never crosses through zero." },
@@ -1181,7 +1181,7 @@
               "subaccount_id": { "type": "string", "description": "Base-10. 0 opens a new account under the MarginEngine; otherwise your account to top up." },
               "nonce": { "type": "string", "description": "Base-10 uint256, unused by this owner in the DepositModule." },
               "module": { "type": "string", "description": "The DepositModule address." },
-              "data": { "type": "string", "description": "abi.encode(uint256 amount, address asset, address managerForNewAccount). asset is the cash asset (USDC, minimum 10) or the cNGN escrow 0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98 (cNGN, minimum 15,000); amount is in the token's 6-decimal base units (1000000000 = 1,000), explicit and at least that minimum; managerForNewAccount is the MarginEngine 0x0705219a1594d5Fc5dC2573da4082cAf3e1B0950, or zero for a top-up." },
+              "data": { "type": "string", "description": "abi.encode(uint256 amount, address asset, address managerForNewAccount). See the page for accepted assets and minimums." },
               "expiry": { "type": "string", "description": "Unix seconds; in the future and at most one hour ahead." },
               "owner": { "type": "string", "description": "Your address: the tokens are pulled from here, and you own the account." },
               "signer": { "type": "string", "description": "Must equal owner." }
@@ -1190,7 +1190,7 @@
           "signature": { "type": "string", "description": "EIP-712 signature by signer: 65 bytes, or longer for an ERC-1271 wallet." },
           "permit": {
             "type": "object",
-            "description": "Optional EIP-2612 permit on Base USDC from owner to the DepositModule, instead of a prior approve. USDC only: cNGN has no permit, and a cNGN deposit carrying one is refused. The venue submits it with the DepositModule as spender, and skips it when the allowance already covers the deposit.",
+            "description": "Optional EIP-2612 permit instead of an approve. USDC only.",
             "required": ["value", "deadline", "signature"],
             "properties": {
               "value": { "type": "string", "description": "Base-10, 6-decimal USDC base units; at least the deposit amount." },
@@ -1269,7 +1269,7 @@
                   "properties": {
                     "cancel_reason": { "type": "string", "description": "Why the order was cancelled; absent otherwise." },
                     "cancelled_at": { "type": "string", "format": "date-time", "description": "When the order was cancelled; absent otherwise." },
-                    "filled_quote": { "type": "string", "description": "What actually traded, in USDC to 6 decimal places: the sum of fill price x size over the order's fills, taker or maker. Absent when the order has no fills. Prefer it over a size derived from the order's amount, which is valued at the signed limit and overstates a marketable order." }
+                    "filled_quote": { "type": "string", "description": "USDC traded, to 6 decimal places. Absent when nothing filled." }
                   }
                 }
               ]
@@ -1349,7 +1349,7 @@
       },
       "PositionsResponse": {
         "type": "object",
-        "description": "Read futures and futures_account. Other keys are reserved: they may be absent, and further keys may appear, for example when another section of the response could not be read. A failure there does not affect futures or futures_account.",
+        "description": "Read futures and futures_account. Other keys are reserved.",
         "required": ["futures"],
         "properties": {
           "futures": {
@@ -1372,7 +1372,7 @@
       },
       "FuturePosition": {
         "type": "object",
-        "description": "An account's position in one futures series. Every field except market and sub_id is read from chain and is absent when that read failed: treat an absent field as unknown, not as zero. An entry without contracts is a series whose position could not be read.",
+        "description": "One futures position. An absent field is unknown, not zero.",
         "required": ["market", "sub_id"],
         "properties": {
           "market": { "type": "string", "example": "cNGN-30NOV26" },
@@ -1396,12 +1396,12 @@
             "description": "The same on the retired USDC-cNGN-30NOV26, in cNGN.",
             "example": "-125000"
           },
-          "pending_vm_usdc": {"type": "string", "description": "Variation margin accrued since the account's last settlement and not yet paid into cash, in USDC. Positive is owed to the account. Variation margin accrues at each mark and is realised at each settlement.", "example": "-125"}
+          "pending_vm_usdc": {"type": "string", "description": "Variation margin accrued since the last settlement, in USDC. Positive is owed to the account.", "example": "-125"}
         }
       },
       "FuturesAccount": {
         "type": "object",
-        "description": "The account's margin under the MarginEngine. It covers every series and the cNGN the account holds, so it is reported once, not per position. Absent when the account is under another manager. A surplus the venue could not read is left out.",
+        "description": "Margin across the whole account. Absent when the account is under another manager.",
         "required": ["subaccount_id", "manager"],
         "properties": {
           "subaccount_id": { "type": "string", "example": "15" },

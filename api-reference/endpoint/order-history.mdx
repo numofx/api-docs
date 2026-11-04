@@ -3,19 +3,11 @@ title: 'List order history'
 openapi: 'GET /orders'
 ---
 
-Returns your orders in every status — `active`, `matching`, `filled`, `cancelled` and `expired` —
-newest first.
-
-<Note>
-  Authentication is required, and the owner is taken from the signature, never from a parameter.
-  Resting orders are public on the book and fills settle on chain, but cancelled and expired orders
-  are not published anywhere else.
-</Note>
+Your orders in every status, newest first: `active`, `matching`, `filled`, `cancelled` and `expired`.
 
 ## Authentication
 
-Build and sign this exact message with `personal_sign` (unix seconds, no trailing newline). The
-domain is the same one the WebSocket uses.
+Sign this exact message with `personal_sign`, using unix seconds and no trailing newline:
 
 ```text
 <domain> wants you to view your Numo order history.
@@ -25,28 +17,14 @@ Issued At: <issued_at>
 Expiration Time: <expiry>
 ```
 
-Send the frame — `address`, `signature`, `nonce`, `issued_at`, `expiry` — as JSON, base64url-encoded,
-in the `X-Numo-Auth` header. One frame can be reused across requests until it expires; the service
-accepts a validity window of up to 24 hours.
-
-A frame signed for the WebSocket `orders` channel is not accepted here, and an order-history frame
-does not authenticate a WebSocket: the two messages differ, so each recovers a different address
-from the other's signature.
+Send `address`, `signature`, `nonce`, `issued_at` and `expiry` as base64url-encoded JSON in the `X-Numo-Auth` header. A frame can be reused until it expires, up to 24 hours. WebSocket frames are not accepted here.
 
 ## What traded
 
-Each order that has filled carries `filled_quote`: the USDC that actually changed hands, summed over
-its fills at the prices they executed at. Use it to reconcile balances. Do not derive a size from the
-order's own amount and limit price — a marketable order is signed with slippage room past the touch,
-so that figure overstates what filled. `filled_quote` is absent for an order with no fills.
+`filled_quote` is the USDC that actually changed hands. Use it to reconcile, not the order's amount × limit price, which overstates a marketable order. It is absent when nothing filled.
 
-## Retention
+## Retention and paging
 
-Filled orders are kept indefinitely, and so is any cancelled or expired order that traded before it
-ended, so its fills and `filled_quote` stay reportable. Cancelled and expired orders with no fills are
-kept for 30 days, then pruned.
+Orders that traded are kept indefinitely. Cancelled and expired orders with no fills are pruned after 30 days.
 
-## Paging
-
-Pages hold up to `limit` orders (default 50, maximum 100). When a page is full, the response includes
-`next_before`; pass it back as `before` to fetch older orders. The last page has no `next_before`.
+Pages hold up to `limit` orders (default 50, maximum 100). Pass `next_before` as `before` for older orders. The last page has no `next_before`.

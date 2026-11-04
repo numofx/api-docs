@@ -3,10 +3,4 @@ title: 'Get OHLCV candles'
 openapi: 'GET /candles'
 ---
 
-Buckets are returned **oldest first**, so a chart can render them directly.
-
-<Warning>
-  Periods with no trades are **absent**, not zero-filled. This venue trades sparsely, and
-  emitting flat synthetic candles would invent price action that never happened. If you need a
-  continuous axis, carry the previous close forward yourself.
-</Warning>
+Buckets are returned oldest first. Periods with no trades are absent, not zero-filled, so carry the previous close forward if you need a continuous axis.

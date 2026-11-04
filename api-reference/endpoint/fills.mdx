@@ -3,58 +3,23 @@ title: 'List fills'
 openapi: 'GET /fills'
 ---
 
-Returns the fills on your orders — every execution, at the price and size it traded — newest first.
-Use it to reconcile balances trade by trade; [order history](/api-reference/endpoint/order-history)
-gives the same activity summed per order.
+Your fills, newest first. Use them to reconcile balances. [Order history](/api-reference/endpoint/order-history) shows the same activity per order.
 
-<Note>
-  Authentication is required, and the owner is taken from the signature, never from a parameter.
-  The public [trades](/api-reference/endpoint/trades) feed lists every execution by order id but not
-  by owner; this endpoint is what ties fills to an address.
-</Note>
-
-## Authentication
-
-Send the same `X-Numo-Auth` frame as [order history](/api-reference/endpoint/order-history), signed
-over the same message. One frame authorizes both endpoints until it expires, so a client that already
-shows order history needs no second signature.
+Send the same `X-Numo-Auth` frame as order history. The owner comes from the signature.
 
 ## Reading a fill
 
-- `liquidity` is `taker` when your order crossed the book, `maker` when it rested and was hit.
-- `side`, `price` and `size` are the engine's: your order's side, the price in USDC per cNGN, and
-  the size in cNGN. `buy` means your order acquired cNGN and paid USDC.
-- `spot_contract.ui_intent` restates the fill at display scales — the same `side`, `price` to 10
-  decimal places and `size` in cNGN to 6 — and `balance_delta` is what the fill moved: cNGN by the
-  size, USDC by size times price, signed by side.
-- A trade between two of your own orders, on different subaccounts, is listed twice — once for each
-  order — because each moved that account's balances. Both rows share a `trade_id`.
-
-## Fees
-
-`fee` is what your order paid on the fill, in USDC. Makers are never charged, so a maker fill's `fee`
-is `0`. A taker fill carries the fee the venue charged: recorded when the fill executes, and filled in
-exactly for fills from before fees were recorded. `fee` is absent only when the fee is not known.
-
-`tx_hash` is the Base transaction that settled the fill. It is absent for fills recorded before
-transaction hashes were stored.
+- `liquidity` is `taker` if your order crossed the book, `maker` if it rested.
+- `side`, `price` and `size` are your order's side, the price in USDC per unit of the base, and the size.
+- `fee` is what you paid in USDC, `0` for a maker. It is absent when unknown.
+- `tx_hash` is the Base transaction that settled the fill. Older fills may not have one.
+- `spot_contract` restates a spot fill at display scales, and `balance_delta` is what it moved.
+- A trade between two of your own subaccounts is listed once per order, with one `trade_id`.
 
 ## Variation margin
 
-A future fill settles variation margin at once: the engine marks the new position to the mark, so a
-buy above the mark (or a sell below it) pays the gap, and the other side receives it. `mark_price` is
-the mark in force when the fill's transaction ran (a mark set later in the same block does not
-count), and `vm_usdc` is what the fill
-settled to your account, in USDC, negative when paid: your side × the size in the base ×
-(`mark_price` − `price`). Both are absent on spot, and on a future fill whose mark the venue could not
-read. The retired `USDC-cNGN-30NOV26` reports `vm_cngn` instead, in cNGN.
+Futures only. `mark_price` is the mark when the fill's transaction ran. `vm_usdc` is what settled to your account, negative when paid: your side × the size in the base × (`mark_price` − `price`). The retired `USDC-cNGN-30NOV26` reports `vm_cngn` instead.
 
-## Retention
+## Retention and paging
 
-Fills are kept indefinitely. An order that traded is never pruned, even after it is cancelled or
-expires, so its fills stay listed.
-
-## Paging
-
-Pages hold up to `limit` fills (default 50, maximum 100). When a page is full, the response includes
-`next_before`; pass it back as `before` to fetch older fills. The last page has no `next_before`.
+Fills are kept indefinitely. Pages hold up to `limit` fills (default 50, maximum 100). Pass `next_before` as `before` for older fills. The last page has no `next_before`.
