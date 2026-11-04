@@ -67,11 +67,11 @@
             "description": "Top of book for a market",
             "headers": {
               "Deprecation": {
-                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT). Those aliases are removed on 2027-01-06.",
+                "description": "Set to true when the request used a deprecated alias.",
                 "schema": { "type": "string", "enum": ["true"] }
               },
               "X-Canonical-Market": {
-                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC.",
+                "description": "The canonical market identifier. Sent with Deprecation.",
                 "schema": { "type": "string" }
               }
             },
@@ -107,8 +107,8 @@
     "/integrations/tickers": {
       "get": {
         "tags": ["Markets service"],
-        "summary": "List tickers for integrators",
-        "description": "One ticker per enabled market, in the pair orientation GET /markets advertises: base_currency is the asset priced, target_currency the asset it is priced in. On cNGN-USDC that is cNGN priced in USDC, the same orientation as GET /book and GET /trades; nothing is inverted. Prices are USDC per cNGN to 10 decimal places: last_price, high, low and bid round down, ask rounds up, so the ticker agrees with the orderbook's top levels. base_volume is cNGN to 6 decimal places, target_volume USDC to 18, both rounded down. Use this endpoint, not stats_24h, for a market data listing. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "summary": "List tickers",
+        "description": "One ticker per spot market, sorted by ticker_id. Cached for 5 seconds.",
         "operationId": "listIntegrationTickers",
         "responses": {
           "200": {
@@ -128,8 +128,8 @@
     "/integrations/orderbook": {
       "get": {
         "tags": ["Markets service"],
-        "summary": "Get orderbook for integrators",
-        "description": "Resting orders aggregated into price levels in the advertised pair orientation. On cNGN-USDC, bids are orders buying cNGN and asks are orders selling it, priced in USDC per cNGN with quantities in cNGN. Bid prices round down and ask prices round up to 10 decimal places, and quantities round down to 6, so no level shows a better price or more size than is resting. Orders whose prices round to the same level are summed; a level whose quantity rounds to 0 is dropped. At most the first 1000 resting orders per side are read. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "summary": "Get orderbook",
+        "description": "Resting orders aggregated into price levels, best first. Cached for 5 seconds.",
         "operationId": "getIntegrationOrderbook",
         "parameters": [
           {
@@ -137,7 +137,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "A ticker_id from GET /integrations/tickers: cNGN-USDC, matched exactly. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers. An unknown value is rejected rather than answered with another market."
+            "description": "A ticker_id from GET /integrations/tickers, such as cNGN-USDC. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
           },
           {
             "name": "depth",
@@ -151,11 +151,11 @@
             "description": "Aggregated levels, best first",
             "headers": {
               "Deprecation": {
-                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT). Those aliases are removed on 2027-01-06.",
+                "description": "Set to true when the request used a deprecated alias.",
                 "schema": { "type": "string", "enum": ["true"] }
               },
               "X-Canonical-Market": {
-                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC.",
+                "description": "The canonical market identifier. Sent with Deprecation.",
                 "schema": { "type": "string" }
               }
             },
@@ -179,8 +179,8 @@
     "/integrations/trades": {
       "get": {
         "tags": ["Markets service"],
-        "summary": "List trades for integrators",
-        "description": "Fills newest first, in the advertised pair orientation. On cNGN-USDC, price is USDC per cNGN to 10 decimal places, base_volume is the cNGN traded to 6 decimal places and target_volume the USDC it traded for to 18, all rounded to nearest. type is the taker's side in cNGN. Responses are cached for up to 5 seconds and carry Cache-Control: public, max-age=5, so polling faster than that returns the same data.",
+        "summary": "List trades",
+        "description": "Trades, newest first. Cached for 5 seconds.",
         "operationId": "listIntegrationTrades",
         "parameters": [
           {
@@ -188,7 +188,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "A ticker_id from GET /integrations/tickers: cNGN-USDC, matched exactly. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06 and answered under the canonical ticker_id with Deprecation: true and X-Canonical-Market headers."
+            "description": "A ticker_id from GET /integrations/tickers, such as cNGN-USDC. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
           },
           {
             "name": "limit",
@@ -199,7 +199,7 @@
             "name": "before_trade_id",
             "in": "query",
             "schema": { "type": "integer", "minimum": 1 },
-            "description": "The next_before_trade_id from the previous page, to page to older trades."
+            "description": "next_before_trade_id from the previous page."
           }
         ],
         "responses": {
@@ -207,11 +207,11 @@
             "description": "One page of trades, newest first",
             "headers": {
               "Deprecation": {
-                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT). Those aliases are removed on 2027-01-06.",
+                "description": "Set to true when the request used a deprecated alias.",
                 "schema": { "type": "string", "enum": ["true"] }
               },
               "X-Canonical-Market": {
-                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC.",
+                "description": "The canonical market identifier. Sent with Deprecation.",
                 "schema": { "type": "string" }
               }
             },
@@ -288,11 +288,11 @@
             "description": "OHLCV buckets, oldest first",
             "headers": {
               "Deprecation": {
-                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT). Those aliases are removed on 2027-01-06.",
+                "description": "Set to true when the request used a deprecated alias.",
                 "schema": { "type": "string", "enum": ["true"] }
               },
               "X-Canonical-Market": {
-                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC.",
+                "description": "The canonical market identifier. Sent with Deprecation.",
                 "schema": { "type": "string" }
               }
             },
@@ -363,11 +363,11 @@
             "description": "Recent trades and 24h stats",
             "headers": {
               "Deprecation": {
-                "description": "Present, with the value true, only when the request named the market by a deprecated alias (USDCcNGN-SPOT). Those aliases are removed on 2027-01-06.",
+                "description": "Set to true when the request used a deprecated alias.",
                 "schema": { "type": "string", "enum": ["true"] }
               },
               "X-Canonical-Market": {
-                "description": "Present only alongside Deprecation: the canonical identifier the body is answered under, cNGN-USDC.",
+                "description": "The canonical market identifier. Sent with Deprecation.",
                 "schema": { "type": "string" }
               }
             },
@@ -1280,19 +1280,19 @@
       },
       "IntegrationTicker": {
         "type": "object",
-        "description": "A market in its advertised orientation: cNGN priced in USDC. Price fields are null, never omitted, when there is no value: no fill yet, no resting bid or ask, or nothing traded in the last 24 hours.",
+        "description": "A spot market. Price fields are null when there is no value.",
         "required": ["ticker_id", "base_currency", "target_currency", "last_price", "base_volume", "target_volume", "bid", "ask", "high", "low"],
         "properties": {
-          "ticker_id": { "type": "string", "description": "The market identifier, cNGN-USDC. Futures are not listed here. Pass it as ticker_id to the orderbook and trades endpoints. base_currency and target_currency state the orientation.", "example": "cNGN-USDC" },
-          "base_currency": { "type": "string", "description": "The asset priced. cNGN on cNGN-USDC.", "example": "cNGN" },
-          "target_currency": { "type": "string", "description": "The asset prices are quoted in. USDC on cNGN-USDC.", "example": "USDC" },
-          "last_price": { "type": ["string", "null"], "description": "Price of the most recent fill, at any age, in target_currency per base_currency (USDC per cNGN), rounded down to 10 decimal places.", "example": "0.0007278" },
-          "base_volume": { "type": "string", "description": "Base asset (cNGN) traded over the trailing 24 hours, rounded down to 6 decimal places. 0 when nothing traded." },
-          "target_volume": { "type": "string", "description": "Target asset (USDC) traded over the trailing 24 hours, rounded down to 18 decimal places. 0 when nothing traded." },
-          "bid": { "type": ["string", "null"], "description": "Best bid in USDC per cNGN, rounded down to 10 decimal places. Equals the orderbook's top bid level price." },
-          "ask": { "type": ["string", "null"], "description": "Best ask in USDC per cNGN, rounded up to 10 decimal places. Equals the orderbook's top ask level price." },
-          "high": { "type": ["string", "null"], "description": "Highest fill price over the trailing 24 hours, in USDC per cNGN, rounded down to 10 decimal places." },
-          "low": { "type": ["string", "null"], "description": "Lowest fill price over the trailing 24 hours, in USDC per cNGN, rounded down to 10 decimal places." }
+          "ticker_id": { "type": "string", "description": "The market identifier. Pass it as ticker_id to the orderbook and trades endpoints.", "example": "cNGN-USDC" },
+          "base_currency": { "type": "string", "description": "The asset priced.", "example": "cNGN" },
+          "target_currency": { "type": "string", "description": "The asset prices are quoted in.", "example": "USDC" },
+          "last_price": { "type": ["string", "null"], "description": "Most recent fill at any age, rounded down to 10 decimal places.", "example": "0.0007278" },
+          "base_volume": { "type": "string", "description": "base_currency traded in the trailing 24 hours, rounded down to 6 decimal places." },
+          "target_volume": { "type": "string", "description": "target_currency traded in the trailing 24 hours, rounded down to 18 decimal places." },
+          "bid": { "type": ["string", "null"], "description": "Best bid, rounded down to 10 decimal places." },
+          "ask": { "type": ["string", "null"], "description": "Best ask, rounded up to 10 decimal places." },
+          "high": { "type": ["string", "null"], "description": "Highest fill in the trailing 24 hours, rounded down to 10 decimal places." },
+          "low": { "type": ["string", "null"], "description": "Lowest fill in the trailing 24 hours, rounded down to 10 decimal places." }
         }
       },
       "IntegrationOrderbookResponse": {
@@ -1300,25 +1300,25 @@
         "required": ["ticker_id", "timestamp", "bids", "asks"],
         "properties": {
           "ticker_id": { "type": "string" },
-          "timestamp": { "type": "integer", "description": "Unix milliseconds at which the book was read." },
+          "timestamp": { "type": "integer", "description": "Unix milliseconds." },
           "bids": {
             "type": "array",
-            "description": "Levels buying cNGN, highest price first. Empty array, never null, when there are none.",
+            "description": "Buy levels, highest price first.",
             "items": { "$ref": "#/components/schemas/IntegrationLevel" }
           },
           "asks": {
             "type": "array",
-            "description": "Levels selling cNGN, lowest price first. Empty array, never null, when there are none.",
+            "description": "Sell levels, lowest price first.",
             "items": { "$ref": "#/components/schemas/IntegrationLevel" }
           }
         }
       },
       "IntegrationLevel": {
         "type": "array",
-        "description": "[price, quantity]: price in USDC per cNGN to 10 decimal places (bids rounded down, asks up), quantity in cNGN to 6 decimal places rounded down, summed over the resting orders at that price.",
+        "description": "[price, quantity]. Price to 10 decimal places (bids rounded down, asks up), quantity to 6 rounded down.",
         "prefixItems": [
-          { "type": "string", "description": "Price in USDC per cNGN" },
-          { "type": "string", "description": "Quantity in cNGN" }
+          { "type": "string", "description": "target_currency per base_currency" },
+          { "type": "string", "description": "Quantity in base_currency" }
         ],
         "minItems": 2,
         "maxItems": 2
@@ -1327,12 +1327,12 @@
         "type": "object",
         "required": ["trade_id", "price", "base_volume", "target_volume", "trade_timestamp", "type"],
         "properties": {
-          "trade_id": { "type": "integer", "description": "The same trade_id GET /trades reports." },
-          "price": { "type": "string", "description": "target_currency per base_currency: USDC per cNGN, to 10 decimal places.", "example": "0.0007278" },
-          "base_volume": { "type": "string", "description": "Base asset traded: cNGN, to 6 decimal places.", "example": "137400" },
-          "target_volume": { "type": "string", "description": "Target asset traded: USDC (price x base_volume), to 18 decimal places.", "example": "99.99972" },
+          "trade_id": { "type": "integer", "description": "Matches trade_id on GET /trades." },
+          "price": { "type": "string", "description": "target_currency per base_currency, to 10 decimal places.", "example": "0.0007278" },
+          "base_volume": { "type": "string", "description": "base_currency traded, to 6 decimal places.", "example": "137400" },
+          "target_volume": { "type": "string", "description": "target_currency traded, to 18 decimal places.", "example": "99.99972" },
           "trade_timestamp": { "type": "integer", "description": "Unix milliseconds." },
-          "type": { "type": "string", "enum": ["buy", "sell"], "description": "The taker's side in cNGN: buy means the taker acquired cNGN and paid USDC." }
+          "type": { "type": "string", "enum": ["buy", "sell"], "description": "The taker's side: buy means the taker bought base_currency." }
         }
       },
       "IntegrationTradesResponse": {
@@ -1344,7 +1344,7 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/IntegrationTrade" }
           },
-          "next_before_trade_id": { "type": "integer", "description": "Pass as before_trade_id to fetch older trades. Absent on the last page." }
+          "next_before_trade_id": { "type": "integer", "description": "Pass as before_trade_id for older trades. Absent on the last page." }
         }
       },
       "PositionsResponse": {
