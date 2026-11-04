@@ -3,18 +3,6 @@ title: 'List tickers'
 openapi: 'GET /integrations/tickers'
 ---
 
-Each ticker is in the orientation `GET /markets` advertises: `base_currency` is `cNGN` and
-`target_currency` is `USDC`, so every price is **USDC per cNGN** (about `0.00073`), `base_volume`
-is cNGN and `target_volume` is USDC. The `ticker_id` is the market identifier, `cNGN-USDC`; read the
-two currency fields for the orientation rather than parsing it. Futures are not listed, and a
-future's identifier is refused as a `ticker_id`. The old
-`USDCcNGN-SPOT` is accepted as a deprecated alias for `ticker_id` until
-2027-01-06, answered under the canonical `ticker_id` with `Deprecation: true` and
-`X-Canonical-Market` headers.
+One ticker per spot market. Futures are not listed.
 
-Prices are rounded to 10 decimal places the same way the orderbook rounds its top levels: `bid`,
-`last_price`, `high` and `low` round down, `ask` rounds up. Volumes round down, `base_volume` to 6
-places and `target_volume` to 18.
-
-Responses are cached for up to 5 seconds and carry `Cache-Control: public, max-age=5`. Polling
-faster than that returns the same body.
+Prices are `target_currency` per `base_currency`: USDC per cNGN on `cNGN-USDC`. Volumes cover the trailing 24 hours. Responses are cached for 5 seconds.
