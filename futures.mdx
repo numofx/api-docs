@@ -234,13 +234,11 @@ USDC per unit of the base. The `/integrations/*` endpoints serve spot only and r
 
 ## The retired series
 
-`USDC-cNGN-30NOV26` is the previous contract, under the first MarginEngine
-(`0xA19E296021c9DF25b90D96C2A0793CC3D0800758`). It runs to its expiry and is listed with
-`close_only: true`, so it takes no new positions. Check `trading_open` before you rely on closing on
-the book.
+`USDC-cNGN-30NOV26` was the previous contract, under the first MarginEngine
+(`0xA19E296021c9DF25b90D96C2A0793CC3D0800758`). It was delisted on 19 November 2026, with no open
+positions: `GET /markets` no longer lists it, and its symbol returns `unknown_market`.
 
-It differs from the series above in every unit, and everything else on this page applies to it only
-where it says so on `GET /markets`:
+For reference, it differed from the series above in every unit:
 
 |                  | `USDC-cNGN-30NOV26`                                               |
 | ---------------- | ----------------------------------------------------------------- |

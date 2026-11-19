@@ -45,14 +45,14 @@ Trading resumes as soon as the index updates.
 ## Direction
 
 On chain, the index feed is in USDC per cNGN, with 18 decimals. `cNGN-30NOV26` quotes the same way, so
-`index_price` on `GET /markets` is the feed's value as is. The retired `USDC-cNGN-30NOV26` quotes
-cNGN per USDC, so its `index_price` is the inverse.
+`index_price` on `GET /markets` is the feed's value as is. The delisted `USDC-cNGN-30NOV26` quoted
+cNGN per USDC, so its `index_price` was the inverse.
 
 | Where | Unit | Example |
 | --- | --- | --- |
 | Index feed on chain | USDC per cNGN | `0.000725` |
 | `index_price` on `cNGN-30NOV26` | USDC per cNGN | `0.000725` |
-| `index_price` on `USDC-cNGN-30NOV26` | cNGN per USDC | `1380` |
+| `index_price` on `USDC-cNGN-30NOV26` (delisted) | cNGN per USDC | `1380` |
 
 The index feed is `0xFaC420d160C7c219A72DC676971670980bAC20a5` on Base.
 
