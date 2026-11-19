@@ -49,7 +49,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market from GET /markets, such as cNGN-USDC or cNGN-30NOV26. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
+            "description": "Market from GET /markets, such as cNGN-30NOV26. Case-sensitive."
           },
           {
             "name": "asset_address",
@@ -91,141 +91,13 @@
                 "examples": {
                   "unknown": {
                     "summary": "An identifier the venue does not list",
-                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-30NOV26", "cNGN-USDC"] }
+                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-30NOV26", "EURC-30NOV26"] }
                   },
                   "missing": {
                     "summary": "Neither symbol nor asset_address given",
-                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-30NOV26", "cNGN-USDC"] }
+                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-30NOV26", "EURC-30NOV26"] }
                   }
                 }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/integrations/tickers": {
-      "get": {
-        "tags": ["Markets service"],
-        "summary": "List tickers",
-        "description": "One ticker per spot market, sorted by ticker_id. Cached for 5 seconds.",
-        "operationId": "listIntegrationTickers",
-        "responses": {
-          "200": {
-            "description": "Tickers for every enabled market, sorted by ticker_id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/IntegrationTicker" }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/integrations/orderbook": {
-      "get": {
-        "tags": ["Markets service"],
-        "summary": "Get orderbook",
-        "description": "Resting orders aggregated into price levels, best first. Cached for 5 seconds.",
-        "operationId": "getIntegrationOrderbook",
-        "parameters": [
-          {
-            "name": "ticker_id",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "A ticker_id from GET /integrations/tickers, such as cNGN-USDC. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
-          },
-          {
-            "name": "depth",
-            "in": "query",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 500, "default": 50 },
-            "description": "Maximum price levels per side."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Aggregated levels, best first",
-            "headers": {
-              "Deprecation": {
-                "description": "Set to true when the request used a deprecated alias.",
-                "schema": { "type": "string", "enum": ["true"] }
-              },
-              "X-Canonical-Market": {
-                "description": "The canonical market identifier. Sent with Deprecation.",
-                "schema": { "type": "string" }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/IntegrationOrderbookResponse" }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing or unknown ticker_id, or depth out of range",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/integrations/trades": {
-      "get": {
-        "tags": ["Markets service"],
-        "summary": "List trades",
-        "description": "Trades, newest first. Cached for 5 seconds.",
-        "operationId": "listIntegrationTrades",
-        "parameters": [
-          {
-            "name": "ticker_id",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "A ticker_id from GET /integrations/tickers, such as cNGN-USDC. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 500, "default": 100 }
-          },
-          {
-            "name": "before_trade_id",
-            "in": "query",
-            "schema": { "type": "integer", "minimum": 1 },
-            "description": "next_before_trade_id from the previous page."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "One page of trades, newest first",
-            "headers": {
-              "Deprecation": {
-                "description": "Set to true when the request used a deprecated alias.",
-                "schema": { "type": "string", "enum": ["true"] }
-              },
-              "X-Canonical-Market": {
-                "description": "The canonical market identifier. Sent with Deprecation.",
-                "schema": { "type": "string" }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/IntegrationTradesResponse" }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing or unknown ticker_id, or an invalid limit or before_trade_id",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             }
           }
@@ -242,7 +114,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market from GET /markets, such as cNGN-USDC or cNGN-30NOV26. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
+            "description": "Market from GET /markets, such as cNGN-30NOV26. Case-sensitive."
           },
           {
             "name": "asset_address",
@@ -312,11 +184,11 @@
                 "examples": {
                   "unknown": {
                     "summary": "An identifier the venue does not list",
-                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-30NOV26", "cNGN-USDC"] }
+                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-30NOV26", "EURC-30NOV26"] }
                   },
                   "missing": {
                     "summary": "Neither symbol nor asset_address given",
-                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-30NOV26", "cNGN-USDC"] }
+                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-30NOV26", "EURC-30NOV26"] }
                   }
                 }
               }
@@ -335,7 +207,7 @@
             "name": "symbol",
             "in": "query",
             "schema": { "type": "string" },
-            "description": "Market from GET /markets, such as cNGN-USDC or cNGN-30NOV26. Case-sensitive. The deprecated USDCcNGN-SPOT is accepted until 2027-01-06."
+            "description": "Market from GET /markets, such as cNGN-30NOV26. Case-sensitive."
           },
           {
             "name": "asset_address",
@@ -387,11 +259,11 @@
                 "examples": {
                   "unknown": {
                     "summary": "An identifier the venue does not list",
-                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-30NOV26", "cNGN-USDC"] }
+                    "value": { "error": "unknown_market", "message": "no such market: NOPE", "markets": ["cNGN-30NOV26", "EURC-30NOV26"] }
                   },
                   "missing": {
                     "summary": "Neither symbol nor asset_address given",
-                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-30NOV26", "cNGN-USDC"] }
+                    "value": { "error": "unknown_market", "message": "symbol or asset_address is required", "markets": ["cNGN-30NOV26", "EURC-30NOV26"] }
                   }
                 }
               }
@@ -814,17 +686,17 @@
       "MarketPresentation": {
         "type": "object",
         "properties": {
-          "market": { "type": "string", "description": "The market identifier: cNGN-USDC (spot), or <BASE>-<DDMONYY> for a future, for example cNGN-30NOV26. Always the canonical identifier, whichever alias the request used. This is the value to pass as symbol, market and ticker_id.", "example": "cNGN-USDC" },
+          "market": { "type": "string", "description": "The market identifier: <BASE>-<DDMONYY> for a future, for example cNGN-30NOV26. Always the canonical identifier.", "example": "cNGN-30NOV26" },
           "contract_type": { "type": "string" },
           "settlement_type": { "type": "string" },
-          "base_asset_symbol": { "type": "string", "description": "The asset priced: cNGN on cNGN-USDC and cNGN-30NOV26.", "example": "cNGN" },
+          "base_asset_symbol": { "type": "string", "description": "The asset priced: cNGN on cNGN-30NOV26, EURC on EURC-30NOV26.", "example": "cNGN" },
           "quote_asset_symbol": { "type": "string", "description": "The asset prices are quoted in: USDC.", "example": "USDC" },
-          "expiry_timestamp": { "type": "integer", "description": "Unix seconds at which the market expires. Present on a future, where it is also the sub_id; omitted on cNGN-USDC." },
-          "display_name": { "type": "string", "description": "Human-readable pair name. It equals the market identifier. Use market as the identifier; this is for display.", "example": "cNGN-USDC" },
+          "expiry_timestamp": { "type": "integer", "description": "Unix seconds at which the series expires. It is also the sub_id." },
+          "display_name": { "type": "string", "description": "Human-readable pair name. It equals the market identifier. Use market as the identifier; this is for display.", "example": "cNGN-30NOV26" },
           "display_label": { "type": "string", "description": "Unit of every price on the market.", "example": "USDC per cNGN" },
           "tick_size": { "type": "string", "description": "Smallest price increment. Order prices are normalized against it." },
-          "min_size": { "type": "string", "description": "Smallest tradable size. Order amounts are normalized against it, and an amount below it normalizes to zero and is rejected.", "example": "0.001" },
-          "contract_multiplier": { "type": "string", "description": "1 on spot. On a future, the base per contract: 1000000 on cNGN-30NOV26.", "example": "1" },
+          "min_size": { "type": "string", "description": "Smallest tradable size. Order amounts are normalized against it, and an amount below it normalizes to zero and is rejected.", "example": "1" },
+          "contract_multiplier": { "type": "string", "description": "The base per contract: 1000000 on cNGN-30NOV26.", "example": "1000000" },
           "settlement_note": { "type": "string" },
           "asset_address": { "type": "string" },
           "sub_id": { "type": "string" },
@@ -833,25 +705,24 @@
           "display_price_kind": { "type": "string", "enum": ["direct", "vol_percent"], "description": "How a client should render the price. All current markets are direct." },
           "display_semantics": { "type": "string", "enum": ["direct", "vol_percent"], "description": "Interpretation of the displayed price. Mirrors display_price_kind." },
           "last_trade_timestamp": { "type": "integer", "description": "Unix seconds of the most recent fill." },
-          "order_entry_spec": { "type": "string", "description": "Identifies the ui_intent contract the market accepts: cngn_usdc_spot_v1 on cNGN-USDC, an identity mapping: the engine order is the ui_intent. Omitted on futures, which take raw engine values only. The retired usdc_cngn_* specs are refused.", "example": "cngn_usdc_spot_v1" },
-          "ui_price_unit": { "type": "string", "description": "Unit of ui_intent.price. The same as engine_price_unit.", "example": "USDC per cNGN" },
-          "ui_size_unit": { "type": "string", "description": "Unit of a size: cNGN amount on spot, 1,000 cNGN of notional on cNGN-30NOV26. On a future, one unit is 0.001 contract.", "example": "cNGN amount" },
-          "ui_side_meaning": { "type": "string", "description": "What each side does in the base. On spot: BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC. On a future a BUY (long) gains when the base strengthens against USD, a SELL (short) when it weakens.", "example": "BUY acquires cNGN and pays USDC; SELL delivers cNGN and receives USDC." },
+          "ui_price_unit": { "type": "string", "description": "Unit of a price. The same as engine_price_unit.", "example": "USDC per cNGN" },
+          "ui_size_unit": { "type": "string", "description": "Unit of a size: 1,000 cNGN of notional on cNGN-30NOV26. One unit is 0.001 contract.", "example": "1,000 cNGN of notional (1,000,000 cNGN a contract)" },
+          "ui_side_meaning": { "type": "string", "description": "What each side does in the base. A BUY (long) gains when the base strengthens against USD, a SELL (short) when it weakens.", "example": "BUY (long) gains when cNGN strengthens against USD (more USDC per cNGN); SELL (short) gains when it weakens." },
           "engine_price_unit": { "type": "string", "description": "Unit of the raw price and limit_price fields.", "example": "USDC per cNGN" },
-          "engine_amount_unit": { "type": "string", "description": "Unit of the raw desired_amount, filled_amount and size fields.", "example": "cNGN amount" },
-          "engine_side_policy": { "type": "string", "description": "How ui_intent.side maps to the engine side. Always same_as_ui.", "example": "same_as_ui" },
+          "engine_amount_unit": { "type": "string", "description": "Unit of the raw desired_amount, filled_amount and size fields.", "example": "1,000 cNGN of notional" },
+          "engine_side_policy": { "type": "string", "description": "How a displayed side maps to the engine side. Always same_as_ui.", "example": "same_as_ui" },
           "ui_price_to_engine": { "type": "string", "description": "Price conversion formula. The identity.", "example": "engine_price = ui_price" },
-          "ui_size_to_engine": { "type": "string", "description": "Size conversion formula. The identity; the signed amount is ui_size x amount_scale.", "example": "engine_amount = ui_size" },
-          "trade_module_address": { "type": "string", "description": "The TradeModule an order for this market must name in action_json.module. Spot and the futures share it." },
-          "quote_asset_address": { "type": "string", "description": "The USDC CashAsset: what spot is settled in, and what fees, margin and variation margin on a future are paid in." },
-          "margin_manager_address": { "type": "string", "description": "The MarginEngine: the manager a trading account for this market must be under. Spot and the futures share it." },
-          "amount_scale": { "type": "string", "description": "What one unit of size is signed as in action_json.data: 1e18 on spot (one cNGN), 1e15 on a future (0.001 contract, which is 1,000 cNGN on cNGN-30NOV26).", "example": "1000000000000000000" },
+          "ui_size_to_engine": { "type": "string", "description": "Size conversion formula. The identity; the signed amount is ui_size x amount_scale.", "example": "engine_amount = ui_size (signed as ui_size x 1000000000000000: ui_size / 1000 contracts)" },
+          "trade_module_address": { "type": "string", "description": "The TradeModule an order for this market must name in action_json.module. Every future shares it." },
+          "quote_asset_address": { "type": "string", "description": "The USDC CashAsset: what fees, margin and variation margin on a future are paid in." },
+          "margin_manager_address": { "type": "string", "description": "The MarginEngine: the manager a trading account for this market must be under. Every future shares it." },
+          "amount_scale": { "type": "string", "description": "What one unit of size is signed as in action_json.data: 1e15 on a future (0.001 contract, which is 1,000 cNGN on cNGN-30NOV26).", "example": "1000000000000000" },
           "fill_band_enforced": { "type": "boolean", "description": "Futures only, always true: the venue admits an order and fills it only inside the fill band, as the chain does." },
-          "fill_band_low": { "type": "string", "description": "Futures only: the lowest price, in USDC per unit of the base, the chain accepts a fill at now. Omitted while the band cannot be read.", "example": "1223.100000000001057982" },
-          "fill_band_high": { "type": "string", "description": "Futures only: the highest price, in USDC per unit of the base, the chain accepts a fill at now. Omitted while the band cannot be read.", "example": "1494.900000000001293088" },
+          "fill_band_low": { "type": "string", "description": "Futures only: the lowest price, in USDC per unit of the base, the chain accepts a fill at now. Omitted while the band cannot be read.", "example": "0.000630765282229334" },
+          "fill_band_high": { "type": "string", "description": "Futures only: the highest price, in USDC per unit of the base, the chain accepts a fill at now. Omitted while the band cannot be read.", "example": "0.00074599555457997" },
           "future": {
             "allOf": [{ "$ref": "#/components/schemas/FutureMarketState" }],
-            "description": "Futures only: the series' live state read from chain. Omitted on spot."
+            "description": "The series' live state read from chain."
           }
         }
       },
@@ -885,8 +756,7 @@
           "display_label": { "type": "string" },
           "tick_size": { "type": "string" },
           "price_semantics": { "type": "string" },
-          "display_semantics": { "type": "string" },
-          "spot_contract": { "$ref": "#/components/schemas/SpotContract" }
+          "display_semantics": { "type": "string" }
         }
       },
       "OrderResponse": {
@@ -958,8 +828,7 @@
           "created_at": { "type": "string", "format": "date-time" },
           "market": { "type": "string" },
           "contract_type": { "type": "string" },
-          "settlement_type": { "type": "string" },
-          "spot_contract": { "$ref": "#/components/schemas/SpotContract" }
+          "settlement_type": { "type": "string" }
         }
       },
       "TradeStats24h": {
@@ -1008,40 +877,6 @@
           "close_only": {"type": "boolean", "description": "True on a series that is winding down and takes no new positions."}
         }
       },
-      "SpotUIIntent": {
-        "type": "object",
-        "description": "The order in the units a UI displays: side in cNGN, price in USDC per cNGN to 10 decimal places, size in cNGN to 6. Since the cNGN-USDC orientation this equals engine_order; only the scale differs.",
-        "properties": {
-          "side": { "type": "string", "enum": ["buy", "sell"], "description": "buy acquires cNGN and pays USDC; sell delivers cNGN and receives USDC. Equals the engine side." },
-          "price": { "type": "string", "description": "Price in USDC per cNGN, to 10 decimal places. Equals the engine price.", "example": "0.0007278" },
-          "size": { "type": "string", "description": "Size in cNGN, to 6 decimal places. Equals the engine amount.", "example": "137400" }
-        }
-      },
-      "SpotContract": {
-        "type": "object",
-        "description": "Present on cNGN-USDC. Restates the engine order at display scales.",
-        "properties": {
-          "spec": { "type": "string", "description": "The market's order_entry_spec.", "example": "cngn_usdc_spot_v1" },
-          "ui_intent": { "$ref": "#/components/schemas/SpotUIIntent" },
-          "engine_order": {
-            "type": "object",
-            "description": "The order as the matching engine sees it: cNGN traded against the quote asset, at the engine's full scale.",
-            "properties": {
-              "side": { "type": "string", "enum": ["buy", "sell"], "description": "Always equals ui_intent.side." },
-              "price": { "type": "string", "description": "Engine price in USDC per cNGN.", "example": "0.0007278" },
-              "amount": { "type": "string", "description": "Engine amount in cNGN.", "example": "137400" }
-            }
-          },
-          "balance_delta": {
-            "type": "object",
-            "description": "Balance change if the order fills completely, signed, to 6 decimal places. A buy of size S at price P is cngn +S and usdc -S x P; a sell is cngn -S and usdc +S x P.",
-            "properties": {
-              "usdc": { "type": "string", "example": "-99.99972" },
-              "cngn": { "type": "string", "example": "+137400" }
-            }
-          }
-        }
-      },
       "CreateOrderRequest": {
         "type": "object",
         "required": [
@@ -1072,13 +907,8 @@
           "limit_price": { "type": "string" },
           "worst_fee": { "type": "string" },
           "expiry": { "type": "integer" },
-          "order_entry_spec": { "type": "string", "description": "Optional, cNGN-USDC only: cngn_usdc_spot_v1. Requires ui_intent. Omit both to submit raw engine values.", "example": "cngn_usdc_spot_v1" },
-          "ui_intent": {
-            "description": "Optional, cNGN-USDC only. Requires order_entry_spec. Sets side, limit_price and desired_amount. If you also send those fields, they must match.",
-            "allOf": [{ "$ref": "#/components/schemas/SpotUIIntent" }]
-          },
-          "reduce_only": { "type": "boolean", "default": false, "description": "Futures only: the order may only shrink the account's position in the series. Refused on spot (400), and refused (422) when the account has no position or the order is on the same side as it. The matcher clamps each fill so it never crosses through zero." },
-          "post_only": {"type": "boolean", "description": "Spot and futures: refuse the order if it would cross the book, and never let it be the taker once it rests.", "default": false},
+          "reduce_only": { "type": "boolean", "default": false, "description": "Futures only: the order may only shrink the account's position in the series. Refused (422) when the account has no position or the order is on the same side as it. The matcher clamps each fill so it never crosses through zero." },
+          "post_only": {"type": "boolean", "description": "Refuse the order if it would cross the book, and never let it be the taker once it rests.", "default": false},
           "action_json": {},
           "signature": { "type": "string" }
         }
@@ -1111,7 +941,7 @@
           "trade_id": { "type": "integer", "description": "The trade this fill belongs to, as on GET /trades." },
           "order_id": { "type": "string", "description": "Your order that filled." },
           "liquidity": { "type": "string", "enum": ["taker", "maker"], "description": "taker when your order crossed the book, maker when it rested and was hit." },
-          "side": { "type": "string", "enum": ["buy", "sell"], "description": "Your order's side: buy acquired cNGN and paid USDC. Equals spot_contract.ui_intent.side." },
+          "side": { "type": "string", "enum": ["buy", "sell"], "description": "Your order's side: buy is a long in the series, sell a short." },
           "price": { "type": "string", "description": "Price the fill executed at, in USDC per cNGN, at the engine's scale." },
           "size": { "type": "string", "description": "Size filled, in cNGN, at the engine's scale." },
           "asset_address": { "type": "string" },
@@ -1123,11 +953,7 @@
           "tx_hash": { "type": "string", "description": "The Base transaction that settled the fill. Absent for fills recorded before it was stored." },
           "mark_price": { "type": "string", "description": "Futures only: the mark the fill settled against, in the market's price unit: the mark in force when the fill's transaction ran. Absent on other markets and when the venue could not read it." },
           "vm_cngn": { "type": "string", "description": "The same on the retired USDC-cNGN-30NOV26, in cNGN." },
-          "vm_usdc": {"type": "string", "description": "Futures only: the variation margin the fill settled at once, in USDC to your account (negative when paid): your side × the size in the base × (mark_price − price). Absent whenever mark_price is."},
-          "spot_contract": {
-            "$ref": "#/components/schemas/SpotContract",
-            "description": "The fill at display scales: ui_intent.size is the cNGN that changed hands, ui_intent.price the USDC per cNGN it traded at, and balance_delta what the fill moved."
-          }
+          "vm_usdc": {"type": "string", "description": "Futures only: the variation margin the fill settled at once, in USDC to your account (negative when paid): your side × the size in the base × (mark_price − price). Absent whenever mark_price is."}
         }
       },
       "FillsResponse": {
@@ -1278,75 +1104,6 @@
           "next_before": { "type": "string", "description": "Pass as before to fetch older orders. Absent on the last page." }
         }
       },
-      "IntegrationTicker": {
-        "type": "object",
-        "description": "A spot market. Price fields are null when there is no value.",
-        "required": ["ticker_id", "base_currency", "target_currency", "last_price", "base_volume", "target_volume", "bid", "ask", "high", "low"],
-        "properties": {
-          "ticker_id": { "type": "string", "description": "The market identifier. Pass it as ticker_id to the orderbook and trades endpoints.", "example": "cNGN-USDC" },
-          "base_currency": { "type": "string", "description": "The asset priced.", "example": "cNGN" },
-          "target_currency": { "type": "string", "description": "The asset prices are quoted in.", "example": "USDC" },
-          "last_price": { "type": ["string", "null"], "description": "Most recent fill at any age, rounded down to 10 decimal places.", "example": "0.0007278" },
-          "base_volume": { "type": "string", "description": "base_currency traded in the trailing 24 hours, rounded down to 6 decimal places." },
-          "target_volume": { "type": "string", "description": "target_currency traded in the trailing 24 hours, rounded down to 18 decimal places." },
-          "bid": { "type": ["string", "null"], "description": "Best bid, rounded down to 10 decimal places." },
-          "ask": { "type": ["string", "null"], "description": "Best ask, rounded up to 10 decimal places." },
-          "high": { "type": ["string", "null"], "description": "Highest fill in the trailing 24 hours, rounded down to 10 decimal places." },
-          "low": { "type": ["string", "null"], "description": "Lowest fill in the trailing 24 hours, rounded down to 10 decimal places." }
-        }
-      },
-      "IntegrationOrderbookResponse": {
-        "type": "object",
-        "required": ["ticker_id", "timestamp", "bids", "asks"],
-        "properties": {
-          "ticker_id": { "type": "string" },
-          "timestamp": { "type": "integer", "description": "Unix milliseconds." },
-          "bids": {
-            "type": "array",
-            "description": "Buy levels, highest price first.",
-            "items": { "$ref": "#/components/schemas/IntegrationLevel" }
-          },
-          "asks": {
-            "type": "array",
-            "description": "Sell levels, lowest price first.",
-            "items": { "$ref": "#/components/schemas/IntegrationLevel" }
-          }
-        }
-      },
-      "IntegrationLevel": {
-        "type": "array",
-        "description": "[price, quantity]. Price to 10 decimal places (bids rounded down, asks up), quantity to 6 rounded down.",
-        "prefixItems": [
-          { "type": "string", "description": "target_currency per base_currency" },
-          { "type": "string", "description": "Quantity in base_currency" }
-        ],
-        "minItems": 2,
-        "maxItems": 2
-      },
-      "IntegrationTrade": {
-        "type": "object",
-        "required": ["trade_id", "price", "base_volume", "target_volume", "trade_timestamp", "type"],
-        "properties": {
-          "trade_id": { "type": "integer", "description": "Matches trade_id on GET /trades." },
-          "price": { "type": "string", "description": "target_currency per base_currency, to 10 decimal places.", "example": "0.0007278" },
-          "base_volume": { "type": "string", "description": "base_currency traded, to 6 decimal places.", "example": "137400" },
-          "target_volume": { "type": "string", "description": "target_currency traded, to 18 decimal places.", "example": "99.99972" },
-          "trade_timestamp": { "type": "integer", "description": "Unix milliseconds." },
-          "type": { "type": "string", "enum": ["buy", "sell"], "description": "The taker's side: buy means the taker bought base_currency." }
-        }
-      },
-      "IntegrationTradesResponse": {
-        "type": "object",
-        "required": ["ticker_id", "trades"],
-        "properties": {
-          "ticker_id": { "type": "string" },
-          "trades": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/IntegrationTrade" }
-          },
-          "next_before_trade_id": { "type": "integer", "description": "Pass as before_trade_id for older trades. Absent on the last page." }
-        }
-      },
       "PositionsResponse": {
         "type": "object",
         "description": "Read futures and futures_account. Other keys are reserved.",
@@ -1423,7 +1180,7 @@
         "properties": {
           "error": { "type": "string", "enum": ["unknown_market"] },
           "message": { "type": "string", "description": "no such market: <identifier> when the symbol or asset_address + sub_id matched nothing; symbol or asset_address is required when the request named no market.", "example": "no such market: NOPE" },
-          "markets": { "type": "array", "items": { "type": "string" }, "description": "The canonical identifiers the venue accepts, in listing order. Deprecated aliases are accepted but not listed.", "example": ["cNGN-30NOV26", "cNGN-USDC"] }
+          "markets": { "type": "array", "items": { "type": "string" }, "description": "The canonical identifiers the venue accepts, in listing order. Deprecated aliases are accepted but not listed.", "example": ["cNGN-30NOV26", "EURC-30NOV26"] }
         }
       }
     }

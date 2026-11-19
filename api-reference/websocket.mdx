@@ -24,7 +24,7 @@ A gap in `seq` means you missed an event, so [resume](#resume-after-reconnect).
 ### Subscribe
 
 ```json
-{ "op": "subscribe", "channel": "book", "market": "cNGN-USDC" }
+{ "op": "subscribe", "channel": "book", "market": "cNGN-30NOV26" }
 ```
 
 <ParamField body="op" type="string" required>
@@ -36,7 +36,7 @@ A gap in `seq` means you missed an event, so [resume](#resume-after-reconnect).
 </ParamField>
 
 <ParamField body="market" type="string">
-  A market such as `cNGN-USDC`, or `asset_address:sub_id`. Required for `book` and `trades`, optional for `orders`. The deprecated `USDCcNGN-SPOT` is accepted until 2027-01-06.
+  A market such as `cNGN-30NOV26`, or `asset_address:sub_id`. Required for `book` and `trades`, optional for `orders`.
 </ParamField>
 
 <ParamField body="since_seq" type="integer">
@@ -48,7 +48,7 @@ Subscribing twice to the same channel and market does nothing.
 ### Unsubscribe
 
 ```json
-{ "op": "unsubscribe", "channel": "book", "market": "cNGN-USDC" }
+{ "op": "unsubscribe", "channel": "book", "market": "cNGN-30NOV26" }
 ```
 
 ### Ping
@@ -73,7 +73,7 @@ The server replies with `{ "type": "pong" }`. Most clients can rely on protocol 
 {
   "type": "update",
   "channel": "book",
-  "market": "cNGN-USDC",
+  "market": "cNGN-30NOV26",
   "seq": 10441,
   "data": { "…": "…" }
 }
@@ -125,7 +125,7 @@ The server replies with `{ "type": "pong" }`. Most clients can rely on protocol 
 Track the highest `seq` you applied per channel and market, then subscribe with it:
 
 ```json
-{ "op": "subscribe", "channel": "book", "market": "cNGN-USDC", "since_seq": 10441 }
+{ "op": "subscribe", "channel": "book", "market": "cNGN-30NOV26", "since_seq": 10441 }
 ```
 
 The server replays what you missed. If `since_seq` is too old, you get `resume_too_old` and a fresh `snapshot`, so discard your local state and rebuild from it.

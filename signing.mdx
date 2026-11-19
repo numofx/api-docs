@@ -99,7 +99,7 @@ after the `0x`. `markets-service` rejects any other length with
 
   It is also not optional on a market that charges. The fee is paid by whichever order arrived
   **later**, so resting on the book does not exempt you — see
-  [Fees follow arrival order](/spot#fees-follow-arrival-order-not-identity). A `worstFee` of `0`
+  [Who is the taker](/matching/fees#who-is-the-taker). A `worstFee` of `0`
   against a live taker schedule reverts `TM_FeeTooHigh` on every fill you take, quietly, until
   the order expires.
 </Warning>
@@ -111,19 +111,21 @@ never matches.
 
 - **`action_json.data`** carries the raw onchain values in **wei** — the numbers the contracts
   settle on.
-  `desiredAmount` is the size × the market's `amount_scale` from `GET /markets`: 1e18 on spot, 1e15
-  on a [future](/futures#place-an-order).
+  `desiredAmount` is the size × the market's `amount_scale` from `GET /markets`: 1e15 on a
+  [future](/futures#place-an-order), so one unit of size is 0.001 contract.
 - **The order body** carries **human decimal** values. `markets-service` normalizes them
   itself: the price is divided by the instrument's tick size, and the amount by its minimum
   size.
 
-So a bid for 1,000 cNGN at 0.00073 is `limit_price: "0.00073"` and `desired_amount: "1000"` in
-the body, while `data` holds `730000000000000` and `1000000000000000000000`.
+So a bid for one `cNGN-30NOV26` contract at 0.00072 is `limit_price: "0.00072"` and
+`desired_amount: "1000"` in the body, while `data` holds `720000000000000` and
+`1000000000000000000`.
 
 <Warning>
   Sending wei in the body is the classic failure: it parses fine and the order rests on the
   book at a tick level nothing else will ever cross. Compute the wei values first, then derive
-  the body values with `formatUnits(value, 18)`.
+  the body values with `formatUnits`: the price over 18 decimals, the amount over the 15 of
+  `amount_scale`.
 </Warning>
 
 ## Sign and submit
@@ -137,20 +139,22 @@ const TRADE_MODULE = '0xDea968188598BA0E3F58A56C0fdfF338C74F699f' // trade_modul
 
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
 
-// A cNGN-USDC buy of 1,000 cNGN at 0.00073 USDC per cNGN.
-const asset = '0x37c976bb5d4887a714ef19AF6B83e34fe2f37c98'      // asset_address from GET /markets
-const subId = 0n                       // sub_id from GET /markets
-const limitPrice = 730000000000000n    // 0.00073 x 1e18
-const desiredAmount = 1000000000000000000000n // 1000 x 1e18
+// A cNGN-30NOV26 buy of one contract (1,000,000 cNGN) at 0.00072 USDC per cNGN.
+const asset = '0xcacee66ad41fd1472a47d7d5fe372ffbfac9aa75'      // asset_address from GET /markets
+const subId = 1796047200n              // sub_id from GET /markets: the series' expiry
+const limitPrice = 720000000000000n    // 0.00072 x 1e18
+const desiredAmount = 1000000000000000000n // 1000 units x amount_scale (1e15): one contract
 // The most this fill may charge you, PER UNIT FILLED -- the contract compares
 // fee / amountFilled against it and reverts TM_FeeTooHigh rather than filling.
 //
 // Derive it from the market's taker_fee_bps (GET /markets) and this order's price, with a
 // little headroom. 0 is correct ONLY on a market that charges nothing: whoever arrives second is
 // the taker, so a zero bound on a fee-charging market reverts every fill you take.
+// On a future the bound is per CONTRACT: price x contract size x fee rate, in USDC x 1e18.
+const contractSize = 1000000n  // contract_multiplier from GET /markets: cNGN per contract
 const takerFeeBps = 15n        // from GET /markets
 const headroomBps = 5n         // so a schedule change does not brick orders already resting
-const worstFee = (limitPrice * (takerFeeBps + headroomBps)) / 10000n
+const worstFee = (limitPrice * contractSize * (takerFeeBps + headroomBps)) / 10000n // 1440000000000000000
 const recipientId = 10n
 const isBid = true
 
@@ -201,7 +205,7 @@ await fetch(`${MARKETS_SERVICE_URL}/orders`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    order_id: 'spot-order-1',
+    order_id: 'future-order-1',
     owner_address: account.address,
     signer_address: account.address,
     subaccount_id: '10',
@@ -209,9 +213,9 @@ await fetch(`${MARKETS_SERVICE_URL}/orders`, {
     nonce: '1',
     side: 'buy',
     asset_address: asset,
-    sub_id: '0',
+    sub_id: '1796047200',
     // human decimals here — the signed `data` above keeps the wei values
-    desired_amount: formatUnits(desiredAmount, 18),
+    desired_amount: formatUnits(desiredAmount, 15),
     limit_price: formatUnits(limitPrice, 18),
     worst_fee: worstFee.toString(),
     expiry: 1893456000,

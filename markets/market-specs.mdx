@@ -1,28 +1,28 @@
 ---
 title: "Market specs"
-description: "Contract specifications for cNGN-USDC spot and the cNGN future"
+description: "Contract specifications for the cNGN future"
 ---
 
-These are the specs for `cNGN-USDC` spot and the `cNGN-30NOV26` future. The venue also lists
-`EURC-USDC`, `EURC-30NOV26` and cNGN options. Read the live values for every market from
+These are the specs for the `cNGN-30NOV26` future. The venue also lists `EURC-30NOV26`: see
+[Futures](/futures) for its contract size, fee and margin. Read the live values for every market from
 [`GET /markets`](/api-reference/endpoint/get) rather than hard-coding them.
 
 ## Specs
 
-| | `cNGN-USDC` | `cNGN-30NOV26` |
-| --- | --- | --- |
-| Type | Spot | Cash-settled dated future |
-| Base / quote | cNGN / USDC | cNGN / USDC |
-| Price unit | USDC per cNGN | USDC per cNGN |
-| Size unit | 1 cNGN | 1,000 cNGN (0.001 contract) |
-| Contract size | — | 1,000,000 cNGN |
-| Minimum size | 1 unit | 1 unit |
-| Size step | 1 unit | 1 unit |
-| Tick size | 1e-18 | 1e-18 |
-| Taker fee | 15 bps | 15 bps of notional |
-| Maker fee | 0 | 0 |
-| Margin | Fully funded | 25% initial, 15% maintenance |
-| Settlement | Each fill, on chain | Cash, at expiry |
+| | `cNGN-30NOV26` |
+| --- | --- |
+| Type | Cash-settled dated future |
+| Base / quote | cNGN / USDC |
+| Price unit | USDC per cNGN |
+| Size unit | 1,000 cNGN (0.001 contract) |
+| Contract size | 1,000,000 cNGN |
+| Minimum size | 1 unit |
+| Size step | 1 unit |
+| Tick size | 1e-18 |
+| Taker fee | 15 bps of notional |
+| Maker fee | 0 |
+| Margin | 25% initial, 15% maintenance |
+| Settlement | Cash, at expiry |
 
 ## Futures dates
 
@@ -42,14 +42,14 @@ A new series gets a new identifier, `<BASE>-<DDMONYY>`, and its own expiry.
 
 ## Signing scales
 
-| | `cNGN-USDC` | `cNGN-30NOV26` |
-| --- | --- | --- |
-| `amount_scale` | 1e18 (1 cNGN) | 1e15 (0.001 contract, 1,000 cNGN) |
-| `limitPrice` | price × 1e18 | price × 1e18 |
+| | `cNGN-30NOV26` |
+| --- | --- |
+| `amount_scale` | 1e15 (0.001 contract, 1,000 cNGN) |
+| `limitPrice` | price × 1e18 |
 
 See [Authentication and signing](/signing).
 
 ## Trading hours
 
-Both markets trade around the clock. A future stops at its `last_trade_time`, and the matcher
+Futures trade around the clock. A future stops at its `last_trade_time`, and the matcher
 pauses while the index is stale or the MarginEngine is paused.

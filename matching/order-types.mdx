@@ -12,7 +12,7 @@ To trade at once, price your limit through the opposite side of the [book](/api-
 
 | Field | Markets | Effect |
 | --- | --- | --- |
-| `post_only` | Spot and futures | The order may only add liquidity. |
+| `post_only` | All | The order may only add liquidity. |
 | `reduce_only` | Futures only | The order may only shrink your position in that series. |
 
 ### Post-only
@@ -29,7 +29,6 @@ A `reduce_only` order can only reduce your position in its series.
 - Each fill is clamped so it never takes your position through zero.
 - Once your position is flat, the order is cancelled with `cancel_reason: "reduce_only_done"` or
   `"reduce_only_no_position"`.
-- It is refused with **400** on spot.
 
 ## Expiry
 

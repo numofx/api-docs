@@ -13,7 +13,6 @@ Send the same `X-Numo-Auth` frame as order history. The owner comes from the sig
 - `side`, `price` and `size` are your order's side, the price in USDC per unit of the base, and the size.
 - `fee` is what you paid in USDC, `0` for a maker. It is absent when unknown.
 - `tx_hash` is the Base transaction that settled the fill. Older fills may not have one.
-- `spot_contract` restates a spot fill at display scales, and `balance_delta` is what it moved.
 - A trade between two of your own subaccounts is listed once per order, with one `trade_id`.
 
 ## Variation margin

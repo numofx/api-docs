@@ -165,52 +165,19 @@ These are the most common rejections, and they almost always mean the body was s
   {
     "error": "unknown_market",
     "message": "no such market: NOPE",
-    "markets": ["cNGN-30NOV26", "cNGN-USDC"]
+    "markets": ["cNGN-30NOV26", "EURC-30NOV26"]
   }
   ```
 
   Two messages occur. `no such market: <identifier>` means the `symbol`, or the
   `asset_address` + `sub_id` pair, matched nothing: identifiers match exactly, with no prefix or
-  case folding, and the deprecated `USDCcNGN-SPOT` still resolves until
-  2027-01-06. `symbol or asset_address is required` means the request named no market at all.
-  Before 2026-10-08 both cases returned the spot book.
+  case folding. A delisted market, such as `cNGN-USDC` and `EURC-USDC` (spot, delisted
+  2026-11-19), matches nothing. `symbol or asset_address is required` means the request named no
+  market at all.
 </ParamField>
 
 <ParamField body="order_entry_spec and ui_intent are only supported for the cNGN/USDC spot and perp contracts" type="400">
-  These two fields apply to `cNGN-USDC` only. Omit them on orders for any other market,
-  including a future.
-</ParamField>
-
-## Order translation (`ui_intent`)
-
-These apply to `cNGN-USDC`. Both fields are optional — omit them and your
-raw engine values are used as sent. Send either one and the rules below apply. Since the cNGN-USDC
-orientation the translation is the identity: the engine order is the `ui_intent`, with the price in
-USDC per cNGN and the size in cNGN. See the [Spot](/spot) guide for the units involved.
-
-<ParamField body={'order_entry_spec must be "cngn_usdc_spot_v1" for this market\'s ui_intent'} type="400">
-  You sent `ui_intent` without `order_entry_spec`, or with a spec that is not this market's own.
-  The error names the spec the market expects, `cngn_usdc_spot_v1`. The retired
-  `usdc_cngn_spot_v1` and `usdc_cngn_perp_v1` specs are refused with this error.
-</ParamField>
-
-<ParamField body="ui_intent is required when order_entry_spec is provided" type="400">
-  The two fields travel together. Send both, or neither.
-</ParamField>
-
-<ParamField body="side does not match ui_intent translation" type="400">
-  You sent both `side` and `ui_intent`, and they disagree. The engine side equals
-  `ui_intent.side`. Omit `side` to let the service derive it.
-</ParamField>
-
-<ParamField body="limit_price does not match ui_intent translation" type="400">
-  You sent both `limit_price` and `ui_intent`, and they disagree. The engine price equals
-  `ui_intent.price`, in USDC per cNGN. Omit `limit_price` to let the service derive it.
-</ParamField>
-
-<ParamField body="desired_amount does not match ui_intent translation" type="400">
-  You sent both `desired_amount` and `ui_intent`, and they disagree. The engine amount equals
-  `ui_intent.size`, in cNGN. Omit `desired_amount` to let the service derive it.
+  Every listed market is a future, and futures take raw engine values. Omit both fields.
 </ParamField>
 
 ## Duplicate orders

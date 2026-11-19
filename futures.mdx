@@ -3,7 +3,7 @@ title: "Futures"
 description: "Trade the cash-settled cNGN and EURC futures: discovery, order entry, the fill band, margin, variation margin and settlement"
 ---
 
-Numo's futures are dated and cash settled in USDC. They are quoted like [spot](/spot): every price is
+Numo's futures are dated and cash settled in USDC. Every price is
 **USDC per unit of the base**, about `0.00072` for cNGN. A **long** (`buy`) gains when the base
 strengthens against the dollar. A **short** (`sell`) gains when it weakens. Read this before
 integrating against a future.
@@ -11,18 +11,17 @@ integrating against a future.
 ## What the market is
 
 Each series is a `FutureAsset` series on Base under the **MarginEngine**, the risk manager that
-holds margin, settles variation margin and liquidates. Orders are signed for the same TradeModule
-as spot, and a wallet can use **one trading account** under the MarginEngine for both. Spot balances
-and futures margin share that account, so cNGN bought on spot counts toward futures margin at its
-factor. Your first [deposit](/api-reference/endpoint/deposits) opens the account.
+holds margin, settles variation margin and liquidates. A wallet uses **one trading account** under the
+MarginEngine for every series, and the [collateral](/collateral) it holds, USDC and cNGN, backs all of
+them. Your first [deposit](/api-reference/endpoint/deposits) opens the account.
 
 A series is listed as `<BASE>-<DDMONYY>`, named for its expiry date:
 
 |                       | `cNGN-30NOV26`                  | `EURC-30NOV26`                  |
 | --------------------- | ------------------------------- | ------------------------------- |
 | `display_label`       | `USDC per cNGN`                 | `USDC per EURC`                 |
-| `expiry_timestamp`    | `1796047200` (14:00 UTC)        | `1796054400` (16:00 UTC)        |
-| `sub_id`              | `1796047200`                    | `1796054400`                    |
+| `expiry_timestamp`    | `1796047200` (14:00 UTC)        | `1796050800` (15:00 UTC)        |
+| `sub_id`              | `1796047200`                    | `1796050800`                    |
 | `contract_multiplier` | `1000000`: 1,000,000 cNGN       | `1000`: 1,000 EURC              |
 | One unit of size      | 1,000 cNGN (0.001 contract)     | 1 EURC (0.001 contract)         |
 | `amount_scale`        | `1000000000000000` (1e15)       | `1000000000000000` (1e15)       |
@@ -52,7 +51,7 @@ A future's entry carries the `ui_*` and `engine_*` contract fields, with
 | Field                             | What it is                                                                       |
 | --------------------------------- | -------------------------------------------------------------------------------- |
 | `asset_address`, `sub_id`         | The `FutureAsset` and the series' expiry. Sign them into `action_json.data`.     |
-| `trade_module_address`            | The TradeModule an order's `action_json.module` must name. Spot uses the same one. |
+| `trade_module_address`            | The TradeModule an order's `action_json.module` must name.                         |
 | `quote_asset_address`             | The USDC CashAsset. Fees, margin and variation margin are paid from it.          |
 | `margin_manager_address`          | The MarginEngine. Only an account under it can hold the future.                  |
 | `amount_scale`                    | What one unit of size is signed as: 1e15, which is 0.001 contract.               |
@@ -113,7 +112,7 @@ and variation margin settles the gap between the fill price and the mark at once
 
 `reduce_only: true` lets an order only shrink the account's position in the series. It is refused
 when the account has no position, or when the order is on the same side as the position. The
-matcher clamps each fill so it never crosses through zero. It is refused on spot.
+matcher clamps each fill so it never crosses through zero.
 
 See [Authentication and signing](/signing) for building the signed payload, and
 [Create order](/api-reference/endpoint/create) for the full request body.
@@ -227,10 +226,8 @@ Your fills, with their `mark_price` and `vm_usdc`, are on
 
 ## Market data
 
-The book, trades and candles work for a future as for spot: pass the series' `market` as `symbol`
-on REST endpoints, or as `market` on the [websocket stream](/api-reference/websocket). Prices are
-USDC per unit of the base. The `/integrations/*` endpoints serve spot only and refuse a future's
-`ticker_id`.
+For the book, trades and candles, pass the series' `market` as `symbol` on REST endpoints, or as
+`market` on the [websocket stream](/api-reference/websocket). Prices are USDC per unit of the base.
 
 ## The retired series
 

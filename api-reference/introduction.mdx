@@ -1,6 +1,6 @@
 ---
 title: "Numo API"
-description: "REST and WebSocket APIs for trading FX spot, futures and options on Numo."
+description: "REST and WebSocket APIs for trading FX futures on Numo."
 ---
 
 ## Welcome
@@ -35,7 +35,7 @@ The contracts and risk engine behind those services live in:
 
 <Steps>
   <Step title="Discover the market">
-    Read `GET /markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `cNGN-USDC`.
+    Read `GET /markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `cNGN-30NOV26`.
   </Step>
   <Step title="Read the book">
     Read `GET /book` and `GET /trades` from `markets-service`, or subscribe to the
