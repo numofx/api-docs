@@ -21,6 +21,9 @@
 - The market identifiers are `<BASE>-<DDMONYY>` for each futures series, currently `cNGN-30NOV26`
   and `EURC-30NOV26`. They are what `market` and `symbol` carry, and what every example passes. A
   future is quoted in USDC per unit of the base, and one unit of size is 0.001 contract.
+- Futures liquidity is on the onchain books (`onchain-book.mdx`): takers call `take` on the book from an
+  account their own wallet owns. The off-chain matcher (`POST /orders`) has no market maker; say so
+  wherever a page shows it as the way to trade.
 - Spot (`cNGN-USDC`, `EURC-USDC`) was delisted on 2026-11-19, with the `/integrations/*` endpoints that
   served it. Do not document spot again; mention it only to say it is delisted. The cNGN and EURC
   escrows remain deposit, withdrawal and collateral assets.

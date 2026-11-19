@@ -32,7 +32,8 @@
             "group": "Overview",
             "pages": [
               "index",
-              "futures"
+              "futures",
+              "onchain-book"
             ]
           },
           {

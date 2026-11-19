@@ -330,6 +330,7 @@
       "post": {
         "tags": ["Markets service"],
         "summary": "Create order",
+        "description": "Posts a signed order to the venue's off-chain matcher. No market maker quotes the futures there, so an order rests until someone crosses it. To trade now, take from the onchain book (Trade on the onchain book guide).",
         "operationId": "createOrder",
         "requestBody": {
           "required": true,

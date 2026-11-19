@@ -3,6 +3,11 @@ title: "Matching engine"
 description: "How the venue matches orders off chain and settles each fill on chain"
 ---
 
+<Note>
+  Market makers quote the futures on the [onchain book](/onchain-book), not on this matcher. An order
+  posted here rests until someone else crosses it. To trade now, take from the onchain book.
+</Note>
+
 Numo matches orders off chain and settles every fill on chain. The order book lives in
 markets-service. Each fill is submitted to `Matching.verifyAndMatch` on Base, which checks both
 signatures and moves the assets.

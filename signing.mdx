@@ -3,6 +3,12 @@ title: "Authentication and signing"
 description: "Build and sign the EIP-712 action payload that POST /orders requires"
 ---
 
+<Note>
+  This page covers signed orders for the venue's off-chain matcher, where no market maker quotes the
+  futures. To trade now, take from the [onchain book](/onchain-book): a direct contract call, with no
+  signed order.
+</Note>
+
 Numo has no API keys. Every order is authenticated by an EIP-712 signature over an `Action`
 struct, verified onchain by the `Matching` contract when the trade settles. `markets-service`
 stores the signature and forwards it — it never signs on your behalf.

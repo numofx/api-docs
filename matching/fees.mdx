@@ -45,3 +45,10 @@ To be sure you are the maker, set [`post_only`](/matching/order-types#post-only)
 
 See [Authentication and signing](/signing) for how to encode it, and
 [Place an order](/futures#place-an-order) for a worked example.
+
+## On the onchain book
+
+A take on the [onchain book](/onchain-book) always pays the taker fee: the taker fee rate × the fill's
+notional, in USDC from your account's cash. Makers pay nothing. Instead of `worstFee`, a take carries
+`maxFee`, the most the whole take may charge, in USDC with 18 decimals. Set it from your limit price,
+as [The fee](/onchain-book#the-fee) shows.

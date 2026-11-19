@@ -64,7 +64,7 @@ decimals. An absent optional field could not be read, so treat it as unknown, no
 | Field                   | Meaning                                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | `expiry_timestamp`      | Unix seconds the series expires and settles.                                                     |
-| `last_trade_time`       | Unix seconds after which no order is accepted and nothing fills: one hour before expiry.         |
+| `last_trade_time`       | Unix seconds after which no order is accepted and nothing fills: one hour before expiry on `cNGN-30NOV26`, 30 minutes on `EURC-30NOV26`. |
 | `listed`, `settled`     | The series' state on its `FutureAsset`.                                                          |
 | `trading_open`          | Whether the matcher crosses orders. While it is `false`, orders are accepted and rest.           |
 | `trading_closed_reason` | Why `trading_open` is `false`, for example that the MarginEngine is paused.                      |
@@ -78,6 +78,12 @@ decimals. An absent optional field could not be read, so treat it as unknown, no
 | `updated_at`            | When the state was read.                                                                         |
 
 ## Place an order
+
+<Note>
+  Market makers quote the futures on the [onchain book](/onchain-book). Take from there to trade now.
+  This section describes signed orders for the venue's off-chain matcher, where no market maker quotes:
+  an order posted there rests until someone else crosses it.
+</Note>
 
 Futures take raw engine values only. `order_entry_spec` and `ui_intent` are refused on a future.
 In the body, `limit_price` is in USDC per unit of the base and `desired_amount` is in units of 0.001
@@ -190,7 +196,8 @@ short pays it.
 
 ## Settlement
 
-Trading stops at `last_trade_time`, one hour before expiry. From then on only the MarginEngine moves
+Trading stops at `last_trade_time`: one hour before expiry on `cNGN-30NOV26`, 30 minutes on
+`EURC-30NOV26`. From then on only the MarginEngine moves
 positions, through liquidations and the close-out.
 
 The settlement price is the time-weighted average of the index over the fixing window, the last

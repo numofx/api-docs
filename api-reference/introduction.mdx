@@ -33,6 +33,11 @@ The contracts and risk engine behind those services live in:
 
 ## Orderbook flow
 
+<Note>
+  Market makers quote the futures on the [onchain book](/onchain-book), not on this matcher. An order
+  posted here rests until someone else crosses it. To trade now, take from the onchain book.
+</Note>
+
 <Steps>
   <Step title="Discover the market">
     Read `GET /markets` to find the canonical market symbol, `asset_address`, `sub_id`, and settlement metadata for instruments like `cNGN-30NOV26`.
